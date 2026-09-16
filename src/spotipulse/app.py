@@ -81,11 +81,12 @@ class SpotipulseApp(App):
     ENABLE_COMMAND_PALETTE = False
 
     BINDINGS = [
-        Binding("1", "show_tab('now')", "Now"),
-        Binding("2", "show_tab('top')", "Top"),
-        Binding("3", "show_tab('genres')", "Genres"),
-        Binding("4", "show_tab('history')", "History"),
-        Binding("5", "show_tab('recent')", "Recent"),
+        # Digits, plus the unshifted AZERTY top row (& é " ' ( ) so French keyboards don't need Shift.
+        Binding("1,ampersand", "show_tab('now')", "Now", key_display="1"),
+        Binding("2,é", "show_tab('top')", "Top", key_display="2"),
+        Binding("3,quotation_mark", "show_tab('genres')", "Genres", key_display="3"),
+        Binding("4,apostrophe", "show_tab('history')", "History", key_display="4"),
+        Binding("5,left_parenthesis", "show_tab('recent')", "Recent", key_display="5"),
         Binding("slash", "filter", "Filter", show=False),
         Binding("w", "set_period('short_term')", "4 Weeks", show=False),
         Binding("m", "set_period('medium_term')", "6 Months", show=False),

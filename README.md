@@ -172,7 +172,7 @@ spotipulse --version     print the version
 
 | Key               | Action                                               |
 | ----------------- | ---------------------------------------------------- |
-| `1` – `5`         | Now Playing / Top / Genres / History / Recently Played |
+| `1` – `5`         | Now Playing / Top / Genres / History / Recently Played (on AZERTY, `&` `é` `"` `'` `(` work too, no Shift needed) |
 | `w` / `m` / `y`   | switch period: 4 Weeks / 6 Months / 1 Year           |
 | `←` / `→`         | switch period (on the period tabs)                   |
 | `/`               | filter top tracks & artists                          |

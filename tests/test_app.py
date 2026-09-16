@@ -53,3 +53,20 @@ def test_app_runs_through_every_tab(tmp_path):
     # the now-playing poll logged the track (45 s in, past the 30 s threshold)
     assert db.play_count() == 1
     assert list(tmp_path.glob("spotipulse-recap-*.png"))
+
+
+def test_tabs_switch_with_digits_and_azerty_top_row(tmp_path):
+    app = SpotipulseApp(FakeAPI(), HistoryDB(":memory:"), Config("id", "secret"), splash=False)
+    seen = []
+
+    async def drive():
+        async with app.run_test(size=(140, 45)) as pilot:
+            await pilot.pause(0.3)
+            # AZERTY without Shift: & é " ' (   then the plain digits
+            for key in ("é", "quotation_mark", "apostrophe", "left_parenthesis", "ampersand", "2", "5", "1"):
+                await pilot.press(key)
+                await pilot.pause(0.1)
+                seen.append(app.query_one("#tabs").active)
+
+    asyncio.run(drive())
+    assert seen == ["top", "genres", "history", "recent", "now", "top", "recent", "now"]
