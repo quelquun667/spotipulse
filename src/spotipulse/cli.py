@@ -101,7 +101,15 @@ def main(argv: list[str] | None = None) -> int:
             login(oauth)
         except SpotifyOauthError as exc:
             _say(f"Login failed: {exc}")
-            _say("Check your Client ID/Secret and that the redirect URI matches exactly.")
+            if getattr(exc, "error", None) in ("server_error", "access_denied"):
+                _say(
+                    "Spotify refused this account for your app. Development Mode apps need:\n"
+                    "  - a Spotify Premium subscription on the account that owns the app\n"
+                    "  - the account you log in with added under User Management in the dashboard\n"
+                    "  - to be logged into that same account in your browser"
+                )
+            else:
+                _say("Check your Client ID/Secret and that the redirect URI matches exactly.")
             return 1
         except OSError as exc:
             _say(f"Couldn't start the local login server on {config.redirect_uri}: {exc}")

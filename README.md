@@ -56,8 +56,11 @@ tools which only wrap the API can't show.
 4. Open the app's **Settings** and copy the **Client ID** and **Client Secret**.
    spotipulse asks for them the first time you run it.
 
-> The app stays in Spotify's _Development Mode_. That's fine for personal use: it works for your own account
-> (and up to 25 users you add under **User Management**).
+> **Important — Spotify's Development Mode rules (2026):**
+> - the account that owns the app needs an active **Spotify Premium** subscription;
+> - every account that logs in (including yours) must be added in the app's **User Management** tab
+>   (name + the email of the Spotify account), up to 5 users;
+> - you must be logged into that same Spotify account in your browser when you approve.
 
 ## Installation
 
@@ -195,7 +198,8 @@ images.
 | Spotify shows **INVALID_CLIENT: Invalid redirect URI** | The redirect URI in your Spotify app must be exactly `http://127.0.0.1:8888/callback`. Save it in the dashboard, then run `spotipulse` again. |
 | **Login failed** / wrong Client ID or Secret | Delete `~/.config/spotipulse/config.toml` and run `spotipulse`: it asks for them again. |
 | **Couldn't start the local login server** | Something else uses port 8888. Close it and try again. |
-| **Spotify refused the request** (403) | Your app is in Development Mode: in the Spotify dashboard, add your account's email under **User Management**. |
+| **Login failed: … server_error** or **access_denied** | Development Mode refused the account: check it has **Premium**, is listed under **User Management** with the right email, and is the account logged in on open.spotify.com. Then run `spotipulse` again. |
+| **Spotify refused the request** (403) | Same cause: add your account's email under **User Management** in the Spotify dashboard. |
 | The browser never opens | Copy the address printed in the terminal into your browser. |
 | History tab is empty | Normal at first: plays are logged while spotipulse is open, after 30 s of each track. |
 | Covers look blocky | Your terminal doesn't support Sixel/Kitty images. Try Windows Terminal, WezTerm or Kitty. |
