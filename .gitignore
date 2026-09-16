@@ -20,3 +20,7 @@ token_cache
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local-only files
+PLAN.md
+assets/logo_original.png
