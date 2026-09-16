@@ -30,6 +30,7 @@ class Track:
     duration_ms: int
     image_url: str | None = None
     url: str | None = None
+    year: str | None = None
 
     @property
     def artist_line(self) -> str:
@@ -52,6 +53,35 @@ class NowPlaying:
     progress_ms: int
     is_playing: bool
     kind: str = "track"
+    device_name: str | None = None
+    device_type: str | None = None
+    volume: int | None = None
+    shuffle: bool = False
+    repeat: str = "off"  # "off" | "context" | "track"
+    context_type: str | None = None  # "playlist" | "album" | "artist" | "collection" | "show"
+    context_uri: str | None = None
+
+
+@dataclass(frozen=True)
+class PlaylistInfo:
+    name: str
+    tracks: int | None
+    owner: str
+    url: str | None = None
+
+
+@dataclass(frozen=True)
+class Profile:
+    display_name: str
+    user_id: str
+    image_url: str | None
+    url: str | None
+    # Each count is None when Spotify didn't answer (missing permission, network...).
+    liked_tracks: int | None
+    saved_albums: int | None
+    followed_artists: int | None
+    playlist_count: int | None
+    playlists: tuple[PlaylistInfo, ...]
 
 
 @dataclass(frozen=True)
@@ -85,6 +115,7 @@ def parse_track(item: dict[str, Any]) -> Track:
         duration_ms=int(item.get("duration_ms") or 0),
         image_url=_best_image(album.get("images")),
         url=(item.get("external_urls") or {}).get("spotify"),
+        year=(album.get("release_date") or "")[:4] or None,
     )
 
 
@@ -98,6 +129,7 @@ def parse_episode(item: dict[str, Any]) -> Track:
         duration_ms=int(item.get("duration_ms") or 0),
         image_url=_best_image(item.get("images") or show.get("images")),
         url=(item.get("external_urls") or {}).get("spotify"),
+        year=(item.get("release_date") or "")[:4] or None,
     )
 
 
@@ -112,6 +144,27 @@ def parse_artist(item: dict[str, Any]) -> Artist:
     )
 
 
+def parse_item(item: dict[str, Any]) -> Track:
+    return parse_episode(item) if item.get("type") == "episode" else parse_track(item)
+
+
+def parse_playlist(item: dict[str, Any]) -> PlaylistInfo:
+    # Feb 2026 renamed the playlist's "tracks" object to "items"; accept both.
+    counter = item.get("items") if isinstance(item.get("items"), dict) else item.get("tracks")
+    total = counter.get("total") if isinstance(counter, dict) else None
+    return PlaylistInfo(
+        name=item.get("name") or "Untitled",
+        tracks=int(total) if total is not None else None,
+        owner=(item.get("owner") or {}).get("display_name") or "",
+        url=(item.get("external_urls") or {}).get("spotify"),
+    )
+
+
+def uri_id(uri: str | None) -> str | None:
+    """'spotify:playlist:37i9dQ' -> '37i9dQ'."""
+    return uri.rsplit(":", 1)[-1] if uri else None
+
+
 def parse_played_at(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
@@ -120,6 +173,7 @@ def parse_played_at(value: str) -> datetime:
 class SpotifyAPI:
     client: spotipy.Spotify
     _image_cache: dict[str, Image.Image] = field(default_factory=dict)
+    _context_names: dict[str, str | None] = field(default_factory=dict)
     _lock: threading.Lock = field(default_factory=threading.Lock)
 
     @classmethod
@@ -145,18 +199,57 @@ class SpotifyAPI:
             raise SpotifyAPIError("Can't reach Spotify — check your connection.") from exc
 
     def now_playing(self) -> NowPlaying | None:
-        data = self._call(self.client.current_user_playing_track, additional_types=("track", "episode"))
+        # GET /me/player: the current item plus device, volume, shuffle/repeat and context.
+        data = self._call(self.client.current_playback, additional_types="track,episode")
         if not data or not data.get("item"):
             return None
         item = data["item"]
         kind = data.get("currently_playing_type") or item.get("type") or "track"
         track = parse_episode(item) if kind == "episode" else parse_track(item)
+        device = data.get("device") or {}
+        context = data.get("context") or {}
+        volume = device.get("volume_percent")
         return NowPlaying(
             track=track,
             progress_ms=int(data.get("progress_ms") or 0),
             is_playing=bool(data.get("is_playing")),
             kind=kind,
+            device_name=device.get("name"),
+            device_type=device.get("type"),
+            volume=int(volume) if volume is not None else None,
+            shuffle=bool(data.get("shuffle_state")),
+            repeat=data.get("repeat_state") or "off",
+            context_type=context.get("type"),
+            context_uri=context.get("uri"),
         )
+
+    def queue(self, limit: int = 5) -> list[Track]:
+        data = self._call(self.client.queue)
+        return [parse_item(i) for i in (data or {}).get("queue", [])[:limit] if i]
+
+    def context_name(self, context_type: str | None, uri: str | None) -> str | None:
+        """Name of the playlist/album/artist being played from (memoized). None if unknown."""
+        if not uri:
+            return None
+        if uri.endswith(":collection") or context_type == "collection":
+            return "Liked Songs"
+        with self._lock:
+            if uri in self._context_names:
+                return self._context_names[uri]
+        name = None
+        try:
+            if context_type == "playlist":
+                name = (self._call(self.client.playlist, uri_id(uri), fields="name") or {}).get("name")
+            elif context_type == "album":
+                name = (self._call(self.client.album, uri_id(uri)) or {}).get("name")
+            elif context_type == "artist":
+                name = (self._call(self.client.artist, uri_id(uri)) or {}).get("name")
+        except SpotifyAPIError:
+            # e.g. Spotify's own editorial playlists answer 404 to Development Mode apps.
+            name = None
+        with self._lock:
+            self._context_names[uri] = name
+        return name
 
     def top_tracks(self, time_range: str, limit: int = 20) -> list[Track]:
         data = self._call(self.client.current_user_top_tracks, limit=limit, time_range=time_range)
@@ -177,6 +270,35 @@ class SpotifyAPI:
             if entry and entry.get("track") and entry.get("played_at"):
                 items.append(PlayedItem(parse_track(entry["track"]), parse_played_at(entry["played_at"])))
         return items
+
+    def _total(self, fn, *path: str, **kwargs) -> int | None:
+        try:
+            data = self._call(fn, **kwargs) or {}
+        except SpotifyAPIError:
+            return None
+        for key in path:
+            data = data.get(key) or {}
+        total = data.get("total") if isinstance(data, dict) else None
+        return int(total) if total is not None else None
+
+    def profile(self) -> Profile:
+        me = self._call(self.client.current_user) or {}
+        try:
+            playlists_page = self._call(self.client.current_user_playlists, limit=50) or {}
+        except SpotifyAPIError:
+            playlists_page = {}
+        total = playlists_page.get("total")
+        return Profile(
+            display_name=me.get("display_name") or me.get("id") or "Spotify user",
+            user_id=me.get("id") or "",
+            image_url=_best_image(me.get("images"), target=200),
+            url=(me.get("external_urls") or {}).get("spotify"),
+            liked_tracks=self._total(self.client.current_user_saved_tracks, limit=1),
+            saved_albums=self._total(self.client.current_user_saved_albums, limit=1),
+            followed_artists=self._total(self.client.current_user_followed_artists, "artists", limit=1),
+            playlist_count=int(total) if total is not None else None,
+            playlists=tuple(parse_playlist(i) for i in playlists_page.get("items", []) if i),
+        )
 
     def image(self, url: str | None) -> Image.Image | None:
         """Download (and memoize) a cover/avatar image. Returns None on any failure."""

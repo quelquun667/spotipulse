@@ -15,6 +15,11 @@ SCOPES = [
     "user-read-playback-state",
     "user-top-read",
     "user-read-recently-played",
+    # Profile tab: liked songs, saved albums, playlists, followed artists.
+    "user-library-read",
+    "playlist-read-private",
+    "playlist-read-collaborative",
+    "user-follow-read",
 ]
 
 
@@ -23,6 +28,8 @@ class TokenStatus(Enum):
     MISSING = "missing"
     # Spotify refresh tokens die 6 months after the original authorization.
     EXPIRED = "expired"
+    # Logged in, but with fewer permissions than this version needs (e.g. after an update).
+    NEEDS_CONSENT = "needs_consent"
 
 
 def make_oauth(config: Config) -> SpotifyOAuth:
@@ -57,7 +64,7 @@ def check_token(oauth: SpotifyOAuth) -> TokenStatus:
     if token is None:
         # Cached token was granted with fewer scopes than we need now.
         logout()
-        return TokenStatus.MISSING
+        return TokenStatus.NEEDS_CONSENT
     return TokenStatus.VALID
 
 

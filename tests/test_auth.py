@@ -47,7 +47,7 @@ def test_offline_keeps_token():
 
 def test_scope_mismatch_forces_new_login():
     path = _write_cache()
-    assert check_token(_oauth({"scope": "user-top-read"}, validate=None)) is TokenStatus.MISSING
+    assert check_token(_oauth({"scope": "user-top-read"}, validate=None)) is TokenStatus.NEEDS_CONSENT
     assert not path.exists()
 
 

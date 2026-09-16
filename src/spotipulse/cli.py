@@ -85,6 +85,9 @@ def main(argv: list[str] | None = None) -> int:
     if status is not TokenStatus.VALID:
         if status is TokenStatus.EXPIRED:
             _say("Your Spotify login has expired (Spotify logins last 6 months).", BOLD)
+        elif status is TokenStatus.NEEDS_CONSENT:
+            _say("spotipulse needs a few more Spotify permissions (for the Profile tab).", BOLD)
+            _say("Log in once more to approve them.", DIM)
         else:
             _say("Not connected to Spotify.", BOLD)
         if not _ask_yes("Open the browser to log in now?"):
