@@ -61,15 +61,25 @@ tools which only wrap the API can't show.
 
 ## Installation
 
-1. Install [pipx](https://pipx.pypa.io) if you don't have it yet:
+1. Check that you have Python 3.11 or newer:
 
    ```bash
-   pip install --user pipx
-   pipx ensurepath
+   python --version        # Windows: py -3.11 --version
    ```
 
-   Then open a new terminal.
-2. Clone and install spotipulse:
+2. Install [pipx](https://pipx.pypa.io) if you don't have it yet:
+
+   ```bash
+   python -m pip install --user pipx
+   python -m pipx ensurepath
+   ```
+
+   On Windows, use `py -3.11` in place of `python` if `python --version` shows an older version.
+
+   `ensurepath` adds pipx's command folder (`~/.local/bin`, or `C:\Users\<you>\.local\bin` on Windows) to
+   your `PATH`. **Close every terminal and open a new one** so it takes effect. In VS Code, restart VS Code
+   itself: its terminals keep the old `PATH` until then.
+3. Clone and install spotipulse:
 
    ```bash
    git clone https://github.com/quelquun667/spotipulse.git
@@ -77,14 +87,34 @@ tools which only wrap the API can't show.
    pipx install .
    ```
 
-3. Run it from any directory:
+   If `pipx` isn't found yet, use `python -m pipx install .` (or `py -3.11 -m pipx install .`).
+4. Run it from any directory, just by its name:
 
    ```bash
    spotipulse
    ```
 
 `pipx` installs spotipulse in its own isolated environment and puts the `spotipulse` command on your `PATH`.
-You don't need to activate a virtualenv.
+You don't need to activate a virtualenv, and the command works from any folder.
+
+### Updating
+
+`pipx install .` copies the code at the moment you run it. After pulling new changes (or editing the code),
+reinstall:
+
+```bash
+cd spotipulse
+git pull
+pipx install . --force
+```
+
+### Uninstalling
+
+```bash
+pipx uninstall spotipulse
+```
+
+Your config, login and history in `~/.config/spotipulse/` are kept. Delete that folder too for a clean slate.
 
 <details>
 <summary>Development install</summary>
@@ -156,6 +186,19 @@ Recap cards are saved to `~/Pictures`, or to your home folder if that doesn't ex
 Covers use the best image protocol your terminal supports: Sixel or the Kitty graphics protocol, with a
 colored half-block fallback everywhere else. Windows Terminal, WezTerm, Kitty, iTerm2 and foot all show real
 images.
+
+## Troubleshooting
+
+| Problem | Fix |
+| ------- | --- |
+| `spotipulse: command not found` / `not recognized` | Open a **new** terminal (restart VS Code if you use its terminal). Still missing? Run `python -m pipx ensurepath` and check that `~/.local/bin` is on your `PATH`. |
+| Spotify shows **INVALID_CLIENT: Invalid redirect URI** | The redirect URI in your Spotify app must be exactly `http://127.0.0.1:8888/callback`. Save it in the dashboard, then run `spotipulse` again. |
+| **Login failed** / wrong Client ID or Secret | Delete `~/.config/spotipulse/config.toml` and run `spotipulse`: it asks for them again. |
+| **Couldn't start the local login server** | Something else uses port 8888. Close it and try again. |
+| **Spotify refused the request** (403) | Your app is in Development Mode: in the Spotify dashboard, add your account's email under **User Management**. |
+| The browser never opens | Copy the address printed in the terminal into your browser. |
+| History tab is empty | Normal at first: plays are logged while spotipulse is open, after 30 s of each track. |
+| Covers look blocky | Your terminal doesn't support Sixel/Kitty images. Try Windows Terminal, WezTerm or Kitty. |
 
 ## Roadmap
 

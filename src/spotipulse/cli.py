@@ -94,9 +94,11 @@ def main(argv: list[str] | None = None) -> int:
             config = _ask_credentials()
             if config is None:
                 return 1
+        oauth = make_oauth(config)
         _say("Opening Spotify in your browser... waiting for you to approve.", GREEN)
+        _say(f"If nothing opens, go to:\n  {oauth.get_authorize_url()}", DIM)
         try:
-            login(make_oauth(config))
+            login(oauth)
         except SpotifyOauthError as exc:
             _say(f"Login failed: {exc}")
             _say("Check your Client ID/Secret and that the redirect URI matches exactly.")
