@@ -21,14 +21,18 @@ tools which only wrap the API can't show.
 ## Features
 
 - **Startup splash**: the logo in green block art
-- **Now Playing**: title, artist and album, the real cover art in your terminal, and a live progress bar
-  (refreshes every ~3 s)
-- **Top**: top 20 tracks and top 20 artists for **4 Weeks / 6 Months / 1 Year**, with cover/avatar preview,
+- **Now Playing**: title, artist, album and release year, the real cover art in your terminal, a live
+  progress bar, where it's playing from ("From playlist Chill Vibes"), the device and its volume,
+  shuffle/repeat state, and the next 5 tracks in your queue (refreshes every ~3 s)
+- **Top**: top 50 tracks and top 50 artists for **4 Weeks / 6 Months / 1 Year**, with a **trend** column
+  (▲ climbed, ▼ dropped, NEW) comparing each period with the next longer one, cover/avatar preview,
   type-to-filter search and an estimated listening time for the period
 - **Genres**: bar chart of your top genres, built from your top 50 artists
 - **History**: day-by-day listening graph from the local database, current and longest streak,
   last 7/30 days compared with the 7/30 days before
 - **Recently Played**: your last 50 tracks with timestamps and cover art
+- **Profile**: your name and avatar, liked songs, saved albums, playlists and followed artists counts,
+  your favorite track/artist/genre of the last 4 weeks and last year, and your playlists
 - **Export recap**: press `e` to save a Wrapped-style PNG card of your current top stats
 - Spotify-green theme, rounded panels, full keyboard and mouse support
 
@@ -144,6 +148,11 @@ The first time you type `spotipulse`:
    `~/.config/spotipulse/config.toml`.
 3. Your browser opens on Spotify's consent page. Approve it, and the dashboard starts.
 
+spotipulse asks for read-only permissions: what's playing and your playback state, your top items and
+recently played tracks, and your library, playlists and followed artists (for the Profile tab). It never
+changes anything in your account. After an update that needs a new permission, it asks you to log in once
+more.
+
 After that, `spotipulse` goes straight to the dashboard and refreshes your login silently in the background.
 Spotify logins expire 6 months after you first approve the app. When that happens, spotipulse says so and
 opens the browser again.
@@ -172,7 +181,7 @@ spotipulse --version     print the version
 
 | Key               | Action                                               |
 | ----------------- | ---------------------------------------------------- |
-| `1` – `5`         | Now Playing / Top / Genres / History / Recently Played (on AZERTY, `&` `é` `"` `'` `(` work too, no Shift needed) |
+| `1` – `6`         | Now Playing / Top / Genres / History / Recently Played / Profile (on AZERTY, `&` `é` `"` `'` `(` `-` work too, no Shift needed) |
 | `w` / `m` / `y`   | switch period: 4 Weeks / 6 Months / 1 Year           |
 | `←` / `→`         | switch period (on the period tabs)                   |
 | `/`               | filter top tracks & artists                          |

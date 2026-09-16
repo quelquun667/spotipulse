@@ -13,11 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   message when the 6-month refresh token expires, and `--logout`
 - First-run prompt for Client ID/Secret, saved to `~/.config/spotipulse/config.toml`
 - Startup splash with the logo in block art
-- Now Playing tab with cover art, live progress bar and podcast episode support
-- Top tab: top 20 tracks & artists for 4 Weeks / 6 Months / 1 Year, live filter, cover/avatar preview and
-  estimated listening time
+- Now Playing tab with cover art, live progress bar, release year, playback context ("From playlist …"),
+  device, volume, shuffle/repeat state, the next 5 queued tracks, and podcast episode support
+- Top tab: top 50 tracks & artists for 4 Weeks / 6 Months / 1 Year with a rank trend vs the next longer
+  period, live filter, cover/avatar preview and estimated listening time
 - Genres tab: bar chart of top genres from your top 50 artists
 - History tab: local SQLite listening log, 30-day graph, current/longest streak, 7- and 30-day comparisons
 - Recently Played tab: last 50 tracks with timestamps and cover art
+- Profile tab: avatar, liked songs / saved albums / playlists / followed artists counts, favorites of the
+  last 4 weeks and last year, playlist list
+- Tabs switch with `1`–`6`, or the unshifted AZERTY top row
+- Asks to log in again when a new version needs extra Spotify permissions
 - PNG recap card export (`e`)
 - Logo assets: SVG, PNG, block-art splash and GitHub social preview
