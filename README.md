@@ -1,0 +1,178 @@
+<p align="center">
+  <img src="assets/logo.png" alt="spotipulse" width="160">
+</p>
+
+<h1 align="center">spotipulse</h1>
+
+<p align="center">A terminal dashboard for your Spotify stats — now playing, top tracks & artists, listening history.</p>
+
+<p align="center">
+  <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-1DB954?logo=python&logoColor=white">
+  <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-1DB954">
+</p>
+
+---
+
+**spotipulse** puts your Spotify listening in a fast, keyboard-driven terminal dashboard. Spotify's API only
+gives you three fixed windows (4 weeks, 6 months, 1 year), so spotipulse also keeps a **local history** of what
+you play. That's what powers the day-by-day graph, listening streaks and week-over-week comparisons that
+tools which only wrap the API can't show.
+
+## Features
+
+- **Startup splash**: the logo in green block art
+- **Now Playing**: title, artist and album, the real cover art in your terminal, and a live progress bar
+  (refreshes every ~3 s)
+- **Top**: top 20 tracks and top 20 artists for **4 Weeks / 6 Months / 1 Year**, with cover/avatar preview,
+  type-to-filter search and an estimated listening time for the period
+- **Genres**: bar chart of your top genres, built from your top 50 artists
+- **History**: day-by-day listening graph from the local database, current and longest streak,
+  last 7/30 days compared with the 7/30 days before
+- **Recently Played**: your last 50 tracks with timestamps and cover art
+- **Export recap**: press `e` to save a Wrapped-style PNG card of your current top stats
+- Spotify-green theme, rounded panels, full keyboard and mouse support
+
+## Screenshot
+
+> _Screenshot / terminal recording coming soon._
+
+## Requirements
+
+- Python **3.11+**
+- A Spotify account
+- A Spotify Developer app (free, takes 2 minutes, see below)
+
+## Spotify Developer app setup
+
+1. Go to [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard) and click **Create app**.
+2. Give it any name and description. Under **Redirect URIs**, add exactly:
+
+   ```
+   http://127.0.0.1:8888/callback
+   ```
+
+   It must match character for character: `127.0.0.1`, not `localhost`, with no trailing slash.
+3. Under **Which API/SDKs are you planning to use?**, tick **Web API**, then save.
+4. Open the app's **Settings** and copy the **Client ID** and **Client Secret**.
+   spotipulse asks for them the first time you run it.
+
+> The app stays in Spotify's _Development Mode_. That's fine for personal use: it works for your own account
+> (and up to 25 users you add under **User Management**).
+
+## Installation
+
+1. Install [pipx](https://pipx.pypa.io) if you don't have it yet:
+
+   ```bash
+   pip install --user pipx
+   pipx ensurepath
+   ```
+
+   Then open a new terminal.
+2. Clone and install spotipulse:
+
+   ```bash
+   git clone https://github.com/quelquun667/spotipulse.git
+   cd spotipulse
+   pipx install .
+   ```
+
+3. Run it from any directory:
+
+   ```bash
+   spotipulse
+   ```
+
+`pipx` installs spotipulse in its own isolated environment and puts the `spotipulse` command on your `PATH`.
+You don't need to activate a virtualenv.
+
+<details>
+<summary>Development install</summary>
+
+```bash
+python -m venv .venv
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
+pip install -e ".[dev]"
+pytest
+ruff check src tests
+```
+
+</details>
+
+## First run
+
+The first time you type `spotipulse`:
+
+1. It tells you you're not connected and asks **Open the browser to log in now? [Y/n]**.
+2. It asks for your **Client ID** and **Client Secret** (the secret is hidden as you type). They're saved to
+   `~/.config/spotipulse/config.toml`.
+3. Your browser opens on Spotify's consent page. Approve it, and the dashboard starts.
+
+After that, `spotipulse` goes straight to the dashboard and refreshes your login silently in the background.
+Spotify logins expire 6 months after you first approve the app. When that happens, spotipulse says so and
+opens the browser again.
+
+Everything lives in `~/.config/spotipulse/`, outside the repository:
+
+| File           | What it is                                           |
+| -------------- | ---------------------------------------------------- |
+| `config.toml`  | your Client ID/Secret and settings (see [`config.example.toml`](config.example.toml)) |
+| `token_cache`  | your Spotify login token                             |
+| `history.db`   | your local listening history (SQLite)                |
+
+> **About local history:** spotipulse logs a track once you've listened to it for 30 seconds **while
+> spotipulse is open**. Leave it running on the Now Playing tab and the History tab fills up over time.
+
+## Usage
+
+```
+spotipulse               launch the dashboard
+spotipulse --logout      forget your Spotify login
+spotipulse --no-splash   skip the startup logo
+spotipulse --version     print the version
+```
+
+### Keybindings
+
+| Key               | Action                                               |
+| ----------------- | ---------------------------------------------------- |
+| `1` – `5`         | Now Playing / Top / Genres / History / Recently Played |
+| `w` / `m` / `y`   | switch period: 4 Weeks / 6 Months / 1 Year           |
+| `←` / `→`         | switch period (on the period tabs)                   |
+| `/`               | filter top tracks & artists                          |
+| `Esc`             | clear the filter                                     |
+| `↑` / `↓`         | move through a table (updates the cover preview)     |
+| `Tab`             | move focus between widgets                           |
+| `r`               | refresh everything                                   |
+| `e`               | export a PNG recap of the selected period            |
+| `L` (Shift + l)   | log out and quit                                     |
+| `q`               | quit                                                 |
+
+Recap cards are saved to `~/Pictures`, or to your home folder if that doesn't exist. Set `export_dir` in
+`config.toml` to change it.
+
+### Cover art
+
+Covers use the best image protocol your terminal supports: Sixel or the Kitty graphics protocol, with a
+colored half-block fallback everywhere else. Windows Terminal, WezTerm, Kitty, iTerm2 and foot all show real
+images.
+
+## Roadmap
+
+- Terminal recording in this README
+- CI (ruff + pytest on GitHub Actions)
+- Optional PyPI release (`pipx install spotipulse`)
+
+> Spotify removed audio features (danceability, energy, tempo…) and recommendations for apps created after
+> November 2024, so spotipulse can't show those.
+
+## License
+
+[MIT](LICENSE)
+
+## Acknowledgments
+
+- [Textual](https://github.com/Textualize/textual): the TUI framework
+- [Spotipy](https://github.com/spotipy-dev/spotipy): the Spotify Web API client
+- [textual-image](https://github.com/lnqs/textual-image): images in the terminal
+- [Pillow](https://python-pillow.org): recap card rendering
