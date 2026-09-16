@@ -52,6 +52,9 @@ tools which only wrap the API can't show.
    ```
 
    It must match character for character: `127.0.0.1`, not `localhost`, with no trailing slash.
+
+   Reusing an existing app that already has another redirect URI (for example port `8899`)? Either add the
+   URI above to it, or set `redirect_uri` in `~/.config/spotipulse/config.toml` to the one it already has.
 3. Under **Which API/SDKs are you planning to use?**, tick **Web API**, then save.
 4. Open the app's **Settings** and copy the **Client ID** and **Client Secret**.
    spotipulse asks for them the first time you run it.
