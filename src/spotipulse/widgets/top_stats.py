@@ -11,10 +11,24 @@ from textual.markup import escape
 from textual.widgets import DataTable, Input, Static, Tab, Tabs
 
 from ..api import TIME_RANGES, Artist, SpotifyAPIError, Track
-from ..stats import format_clock, format_duration, total_runtime_ms
+from ..stats import format_clock, format_duration, rank_changes, total_runtime_ms
 from . import CoverArt, LazyView, placeholder_cover
 
-TOP_ARTISTS_SHOWN = 20
+TOP_ARTISTS_SHOWN = 50
+# Each period's trend compares it with the next longer one; "1 Year" has nothing longer.
+REFERENCE_PERIOD = {"short_term": "medium_term", "medium_term": "long_term"}
+
+
+def trend_cell(change: int | None, has_reference: bool) -> Text:
+    if not has_reference:
+        return Text("")
+    if change is None:
+        return Text("NEW", style="bold #1ED760")
+    if change > 0:
+        return Text(f"▲ {change}", style="#1ED760")
+    if change < 0:
+        return Text(f"▼ {-change}", style="#E5534B")
+    return Text("=", style="dim")
 
 
 def track_matches(track: Track, needle: str) -> bool:
@@ -40,6 +54,9 @@ class TopStatsView(LazyView):
         self._tracks: list[Track] = []
         self._artists: list[Artist] = []
         self._loaded_period: str | None = None
+        self._track_trends: dict[str, int | None] = {}
+        self._artist_trends: dict[str, int | None] = {}
+        self._has_reference = False
 
     def compose(self) -> ComposeResult:
         with Horizontal(id="top-header"):
@@ -61,11 +78,13 @@ class TopStatsView(LazyView):
     def on_mount(self) -> None:
         tracks = self.query_one("#top-tracks", DataTable)
         tracks.add_column("#", key="rank", width=3)
+        tracks.add_column("Trend", key="trend", width=5)
         tracks.add_column("Title", key="title", width=28)
         tracks.add_column("Artist", key="artist", width=20)
         tracks.add_column("Length", key="length", width=6)
         artists = self.query_one("#top-artists", DataTable)
         artists.add_column("#", key="rank", width=3)
+        artists.add_column("Trend", key="trend", width=5)
         artists.add_column("Artist", key="artist", width=20)
         artists.add_column("Genres", key="genres", width=24)
 
@@ -103,23 +122,54 @@ class TopStatsView(LazyView):
         except SpotifyAPIError as exc:
             self.app.call_from_thread(self._failed, str(exc))
             return
+        track_trends: dict[str, int | None] = {}
+        artist_trends: dict[str, int | None] = {}
+        reference_period = REFERENCE_PERIOD.get(time_range)
+        if reference_period:
+            try:
+                reference = self.app.get_top(reference_period)
+            except SpotifyAPIError:
+                reference_period = None
+            else:
+                track_trends = rank_changes([t.id for t in data.tracks], [t.id for t in reference.tracks])
+                artist_trends = rank_changes([a.id for a in data.artists], [a.id for a in reference.artists])
         _, summary = self.app.listening_summary(time_range)
         self.app.call_from_thread(
-            self._loaded, time_range, data.tracks, data.artists[:TOP_ARTISTS_SHOWN], summary
+            self._loaded,
+            time_range,
+            data.tracks,
+            data.artists[:TOP_ARTISTS_SHOWN],
+            summary,
+            (track_trends, artist_trends, reference_period),
         )
 
     def _failed(self, message: str) -> None:
         self.stale = True
         self.query_one("#top-summary", Static).update(f"[red]{escape(message)}[/red]")
 
-    def _loaded(self, time_range: str, tracks: list[Track], artists: list[Artist], summary: str) -> None:
+    def _loaded(
+        self,
+        time_range: str,
+        tracks: list[Track],
+        artists: list[Artist],
+        summary: str,
+        trends: tuple[dict[str, int | None], dict[str, int | None], str | None],
+    ) -> None:
         if time_range != self.app.period:
             return
         self._loaded_period = time_range
         self._tracks, self._artists = tracks, artists
+        self._track_trends, self._artist_trends, reference_period = trends
+        self._has_reference = reference_period is not None
         runtime = format_duration(total_runtime_ms(tracks))
+        if reference_period:
+            trend_note = (
+                f"Trend: rank vs your last {TIME_RANGES[reference_period].lower()} (▲ up, ▼ down, NEW)"
+            )
+        else:
+            trend_note = "Trend: nothing longer than 1 year to compare with"
         self.query_one("#top-summary", Static).update(
-            f"{summary}\n[dim]Top {len(tracks)} tracks back to back: {runtime}[/dim]"
+            f"{summary}\n[dim]Top {len(tracks)} tracks back to back: {runtime} · {trend_note}[/dim]"
         )
         self._render_tables()
 
@@ -150,6 +200,7 @@ class TopStatsView(LazyView):
                 continue
             tracks.add_row(
                 str(rank),
+                trend_cell(self._track_trends.get(track.id), self._has_reference),
                 Text(track.name),
                 Text(track.artist_line),
                 format_clock(track.duration_ms),
@@ -161,7 +212,13 @@ class TopStatsView(LazyView):
             if needle and not artist_matches(artist, needle):
                 continue
             genres = ", ".join((artist.genres or ())[:3]) or "—"
-            artists.add_row(str(rank), Text(artist.name), Text(genres, style="dim"), key=f"a{rank - 1}")
+            artists.add_row(
+                str(rank),
+                trend_cell(self._artist_trends.get(artist.id), self._has_reference),
+                Text(artist.name),
+                Text(genres, style="dim"),
+                key=f"a{rank - 1}",
+            )
 
     # ---------- art preview ----------
 

@@ -175,6 +175,10 @@ SplashScreen {
 
 #np-album {
     color: $text-muted;
+}
+
+#np-context {
+    color: $text-muted;
     margin-bottom: 2;
 }
 
@@ -198,6 +202,59 @@ SplashScreen {
 
 #np-time {
     color: $text-muted;
+}
+
+#np-playback {
+    margin-top: 2;
+}
+
+#np-queue {
+    height: auto;
+    margin-top: 1;
+    padding: 0 2;
+}
+
+/* ---------- profile ---------- */
+
+#profile-header {
+    height: 14;
+    margin-bottom: 1;
+}
+
+#profile-avatar {
+    width: 26;
+    height: 13;
+}
+
+#profile-identity {
+    padding-left: 3;
+    height: 13;
+}
+
+#profile-name {
+    color: $text;
+    margin-top: 2;
+}
+
+#profile-link {
+    margin-bottom: 1;
+}
+
+#profile-cards {
+    height: 5;
+}
+
+#profile-body {
+    height: 1fr;
+}
+
+#profile-favorites {
+    width: 1fr;
+    padding: 1 2;
+}
+
+#profile-playlists-panel {
+    width: 1fr;
 }
 
 /* ---------- top stats ---------- */

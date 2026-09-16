@@ -24,6 +24,7 @@ from .stats import format_duration, listened_ms
 from .widgets.genres import GenresView
 from .widgets.history import HistoryView
 from .widgets.now_playing import NowPlayingView
+from .widgets.profile import ProfileView
 from .widgets.recent import RecentView
 from .widgets.top_stats import TopStatsView
 
@@ -45,7 +46,7 @@ SPOTIPULSE_THEME = Theme(
 
 @dataclass(frozen=True)
 class TopData:
-    tracks: list[Track]
+    tracks: list[Track]  # up to 50
     artists: list[Artist]  # up to 50, so genres have more to work with
     genres: list[GenreCount]
 
@@ -81,12 +82,13 @@ class SpotipulseApp(App):
     ENABLE_COMMAND_PALETTE = False
 
     BINDINGS = [
-        # Digits, plus the unshifted AZERTY top row (& é " ' ( ) so French keyboards don't need Shift.
+        # Digits, plus the unshifted AZERTY top row (& é " ' ( -) so French keyboards don't need Shift.
         Binding("1,ampersand", "show_tab('now')", "Now", key_display="1"),
         Binding("2,é", "show_tab('top')", "Top", key_display="2"),
         Binding("3,quotation_mark", "show_tab('genres')", "Genres", key_display="3"),
         Binding("4,apostrophe", "show_tab('history')", "History", key_display="4"),
         Binding("5,left_parenthesis", "show_tab('recent')", "Recent", key_display="5"),
+        Binding("6,minus", "show_tab('profile')", "Profile", key_display="6"),
         Binding("slash", "filter", "Filter", show=False),
         Binding("w", "set_period('short_term')", "4 Weeks", show=False),
         Binding("m", "set_period('medium_term')", "6 Months", show=False),
@@ -122,6 +124,8 @@ class SpotipulseApp(App):
                 yield HistoryView()
             with TabPane("Recently Played", id="recent"):
                 yield RecentView()
+            with TabPane("Profile", id="profile"):
+                yield ProfileView()
         yield Footer()
 
     def on_mount(self) -> None:
@@ -138,7 +142,7 @@ class SpotipulseApp(App):
             cached = self._top_cache.get(time_range)
             if cached:
                 return cached
-            tracks = self.api.top_tracks(time_range, limit=20)
+            tracks = self.api.top_tracks(time_range, limit=50)
             artists = fill_missing_genres(self.api.top_artists(time_range, limit=50), self.api.artist)
             data = TopData(tracks, artists, top_genres(artists))
             self._top_cache[time_range] = data
@@ -161,7 +165,9 @@ class SpotipulseApp(App):
         if first and first.astimezone().date() > start:
             since = f" (tracked since {first.astimezone():%b %d})"
         label = f"≈ {format_duration(ms)} listened"
-        return label, f"[b]{label}[/b] in the last {TIME_RANGES[time_range].lower()}{since} · {plays} plays"
+        period = TIME_RANGES[time_range].lower()
+        plays_label = f"{plays} play{'s' if plays != 1 else ''}"
+        return label, f"[b]{label}[/b] in the last {period}{since} · {plays_label}"
 
     # ---------- actions ----------
 
@@ -189,7 +195,13 @@ class SpotipulseApp(App):
         self._activate(event.pane.id)
 
     def _activate(self, pane_id: str | None) -> None:
-        views = {"top": TopStatsView, "genres": GenresView, "history": HistoryView, "recent": RecentView}
+        views = {
+            "top": TopStatsView,
+            "genres": GenresView,
+            "history": HistoryView,
+            "recent": RecentView,
+            "profile": ProfileView,
+        }
         if pane_id in views:
             self.query_one(views[pane_id]).activate()
 
@@ -197,7 +209,7 @@ class SpotipulseApp(App):
         with self._top_lock:
             self._top_cache.clear()
         self.query_one(NowPlayingView).poll()
-        for view_type in (TopStatsView, GenresView, HistoryView, RecentView):
+        for view_type in (TopStatsView, GenresView, HistoryView, RecentView, ProfileView):
             self.query_one(view_type).stale = True
         self._activate(self.query_one("#tabs", TabbedContent).active)
         self.notify("Refreshing…", timeout=1.5)

@@ -9,6 +9,7 @@ from spotipulse.stats import (
     format_clock,
     format_duration,
     longest_streak,
+    rank_changes,
     total_runtime_ms,
 )
 
@@ -68,3 +69,8 @@ def test_compare_periods_without_previous_data():
     c = compare_periods([day(0)], TODAY, 7, "Last 7 days")
     assert c.change_pct is None
     assert format_change(None) == "—"
+
+
+def test_rank_changes():
+    changes = rank_changes(["a", "b", "c", "d"], ["b", "a", "x", "d"])
+    assert changes == {"a": 1, "b": -1, "c": None, "d": 0}

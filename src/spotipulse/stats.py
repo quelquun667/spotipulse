@@ -103,3 +103,15 @@ def format_change(pct: float | None) -> str:
         return "—"
     arrow = "▲" if pct > 0 else "▼" if pct < 0 else "="
     return f"{arrow} {abs(pct):.0f}%"
+
+
+def rank_changes(current: Sequence[str], reference: Sequence[str]) -> dict[str, int | None]:
+    """How many places each id climbed compared with a reference ranking.
+
+    Positive = higher now than in the reference, 0 = same place, None = not in the reference (new).
+    """
+    previous = {item_id: rank for rank, item_id in enumerate(reference)}
+    return {
+        item_id: (previous[item_id] - rank if item_id in previous else None)
+        for rank, item_id in enumerate(current)
+    }
