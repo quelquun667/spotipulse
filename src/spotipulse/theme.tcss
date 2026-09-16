@@ -1,0 +1,276 @@
+/* spotipulse — Spotify-green dashboard theme.
+   Colors come from the "spotipulse" Textual theme registered in app.py:
+   $primary = #1DB954, $background = #121212, $surface = #181818, $panel = #282828. */
+
+Screen {
+    background: $background;
+}
+
+Header {
+    background: $background;
+    color: $primary;
+    text-style: bold;
+}
+
+Footer {
+    background: $surface;
+}
+
+TabbedContent {
+    height: 1fr;
+}
+
+TabbedContent > ContentTabs {
+    background: $background;
+}
+
+TabPane {
+    padding: 1 2;
+}
+
+Tabs .underline--bar {
+    color: $primary;
+    background: $panel;
+}
+
+Tab.-active {
+    color: $primary;
+    text-style: bold;
+}
+
+Tabs:focus Tab.-active {
+    color: $background;
+    background: $primary;
+}
+
+/* ---------- shared building blocks ---------- */
+
+.panel {
+    border: round $panel;
+    border-title-color: $primary;
+    border-title-style: bold;
+    background: $surface;
+    padding: 0 1;
+    height: 1fr;
+}
+
+.panel:focus-within {
+    border: round $primary;
+}
+
+.muted {
+    color: $text-muted;
+}
+
+.empty {
+    color: $text-muted;
+    text-style: italic;
+    padding: 1 2;
+}
+
+.art {
+    width: 36;
+    height: 18;
+}
+
+DataTable {
+    background: $surface;
+    height: 1fr;
+    scrollbar-size-vertical: 1;
+}
+
+DataTable > .datatable--header {
+    background: $surface;
+    color: $primary;
+    text-style: bold;
+}
+
+DataTable > .datatable--cursor {
+    background: $primary 30%;
+    color: $text;
+}
+
+DataTable:blur > .datatable--cursor {
+    background: $panel;
+}
+
+Input {
+    border: round $panel;
+    background: $surface;
+}
+
+Input:focus {
+    border: round $primary;
+}
+
+/* ---------- splash ---------- */
+
+SplashScreen {
+    align: center middle;
+    background: $background;
+}
+
+#splash {
+    width: 60;
+    height: auto;
+    align: center top;
+}
+
+#splash-logo {
+    color: #1ED760;
+    width: auto;
+}
+
+#splash-name {
+    color: $text;
+    text-style: bold;
+    width: auto;
+    margin-top: 1;
+}
+
+#splash-tagline {
+    color: $text-muted;
+    width: auto;
+}
+
+/* ---------- now playing ---------- */
+
+#np-body {
+    height: auto;
+    border: round $panel;
+    background: $surface;
+    padding: 1 2;
+}
+
+#np-art-box {
+    width: 44;
+    height: 22;
+    margin-right: 3;
+}
+
+#np-art {
+    width: 40;
+    height: 20;
+}
+
+#np-info {
+    height: auto;
+    padding-top: 2;
+}
+
+#np-status {
+    color: $primary;
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+#np-title {
+    text-style: bold;
+    color: $text;
+}
+
+#np-artist {
+    color: $primary;
+}
+
+#np-album {
+    color: $text-muted;
+    margin-bottom: 2;
+}
+
+#np-progress {
+    width: 100%;
+    height: 1;
+}
+
+#np-progress Bar {
+    width: 1fr;
+}
+
+#np-progress Bar > .bar--bar {
+    color: $primary;
+    background: $panel;
+}
+
+#np-progress Bar > .bar--complete {
+    color: $primary;
+}
+
+#np-time {
+    color: $text-muted;
+}
+
+/* ---------- top stats ---------- */
+
+#top-header {
+    height: auto;
+}
+
+#period-tabs {
+    width: 1fr;
+}
+
+#top-summary {
+    height: auto;
+    padding: 0 1;
+    margin: 1 0;
+    color: $text;
+}
+
+#top-filter {
+    margin-bottom: 1;
+}
+
+#top-body, #recent-body {
+    height: 1fr;
+}
+
+#top-tracks-panel {
+    width: 3fr;
+}
+
+#top-artists-panel {
+    width: 2fr;
+}
+
+#top-art-panel, #recent-art-panel {
+    width: 40;
+}
+
+#top-art-caption, #recent-art-caption {
+    height: auto;
+    padding-top: 1;
+}
+
+/* ---------- genres ---------- */
+
+#genres-chart {
+    height: auto;
+    padding: 1 1;
+}
+
+/* ---------- history ---------- */
+
+#history-cards {
+    height: 5;
+    margin-bottom: 1;
+}
+
+.card {
+    border: round $panel;
+    background: $surface;
+    width: 1fr;
+    height: 5;
+    padding: 0 2;
+    content-align: left middle;
+}
+
+#history-chart {
+    height: auto;
+    padding: 0 1;
+}
+
+#history-compare {
+    height: 6;
+    margin-top: 1;
+}
