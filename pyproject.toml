@@ -1,0 +1,67 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "spotipulse"
+version = "0.1.0"
+description = "A terminal dashboard for your Spotify stats — now playing, top tracks & artists, listening history."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+authors = [{ name = "Quelqu'un" }]
+keywords = ["spotify", "cli", "tui", "terminal", "music", "textual", "spotify-api"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Sound/Audio",
+]
+dependencies = [
+    "textual>=8.0",
+    "textual-image>=0.12",
+    "spotipy>=2.25",
+    "pillow>=10.1",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.urls]
+Homepage = "https://github.com/quelquun667/spotipulse"
+Issues = "https://github.com/quelquun667/spotipulse/issues"
+
+[project.scripts]
+spotipulse = "spotipulse.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/spotipulse"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"assets/logo.png" = "spotipulse/assets/logo.png"
+"assets/logo_ascii.txt" = "spotipulse/assets/logo_ascii.txt"
+
+[tool.hatch.build.targets.sdist]
+include = ["src/", "assets/", "tests/", "README.md", "CHANGELOG.md", "LICENSE", "config.example.toml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning:textual_image.*"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["spotipulse"]
+known-local-folder = ["conftest"]

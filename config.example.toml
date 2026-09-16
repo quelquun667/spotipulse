@@ -1,0 +1,16 @@
+# spotipulse configuration
+#
+# The real file lives at ~/.config/spotipulse/config.toml and is created for you
+# on first run. This template only shows its shape — never put real credentials here.
+
+[spotify]
+client_id = "your-client-id"
+client_secret = "your-client-secret"
+# Must match, character for character, the redirect URI set in your Spotify app dashboard.
+redirect_uri = "http://127.0.0.1:8888/callback"
+
+[app]
+# Seconds between "now playing" refreshes.
+refresh_interval = 3
+# Where exported recap cards are saved. Defaults to ~/Pictures (or your home folder).
+# export_dir = "~/Pictures"
