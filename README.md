@@ -170,7 +170,7 @@ Everything lives in `~/.config/spotipulse/`, outside the repository:
 
 | File           | What it is                                           |
 | -------------- | ---------------------------------------------------- |
-| `config.toml`  | your Client ID/Secret and settings (see [`config.example.toml`](config.example.toml)) |
+| `config.toml`  | your Client ID/Secret and settings (see [Settings](#settings)) |
 | `token_cache`  | your Spotify login token                             |
 | `history.db`   | your local listening history (SQLite)                |
 | `cache/`       | last fetched data and covers, for an instant start (safe to delete) |
@@ -200,14 +200,14 @@ spotipulse --version     print the version
 | `↑` / `↓`         | move through a table (updates the cover preview)     |
 | `Tab`             | move focus between widgets                           |
 | `c`               | compact view on / off                                |
-| `?`               | show all keyboard shortcuts                          |
+| `?` or `,`        | show all keyboard shortcuts (`,` so AZERTY needs no Shift) |
 | `r`               | refresh everything                                   |
 | `e`               | export a PNG recap of the selected period            |
 | `L` (Shift + l)   | log out and quit                                     |
 | `q`               | quit                                                 |
 
 Recap cards are saved to `~/Pictures`, or to your home folder if that doesn't exist. Set `export_dir` in
-`config.toml` to change it.
+`config.toml` to change it (see [Settings](#settings)).
 
 ### Window size
 
@@ -215,13 +215,46 @@ spotipulse works from about 60×15 upwards. Below 140 columns the Top and Recent
 step aside; below 100 columns the Top tables stack and the Now Playing cover hides; below 36 rows the header
 and the "Up next" panel make room. For a very small window, use the compact view (`c`).
 
-### Cover art
+## Settings
 
-By default, covers are drawn with colored half-blocks: plain text that every terminal handles cleanly.
-For sharper artwork, set `covers = "auto"` in `~/.config/spotipulse/config.toml` to use your terminal's
-image protocol (Sixel or Kitty). It looks better, but some terminals — Windows Terminal among them — leave
-leftover pixels on screen and flicker while you select text. The other values are `"unicode"` (coarser
-fallback) and `"off"` (no artwork).
+All settings live in `~/.config/spotipulse/config.toml`, under `[app]`. Edit the file and restart
+spotipulse. [`config.example.toml`](config.example.toml) shows the whole file.
+
+| Setting | Default | What it does |
+| ------- | ------- | ------------ |
+| `covers` | `"blocks"` | how album art is drawn — see the table below |
+| `refresh_interval` | `3` | seconds between "now playing" refreshes (minimum 1) |
+| `export_dir` | `~/Pictures` | where `e` saves recap cards; falls back to your home folder |
+
+```toml
+[app]
+covers = "blocks"
+refresh_interval = 3
+export_dir = "~/Pictures"
+```
+
+The `[spotify]` section holds your `client_id`, `client_secret` and `redirect_uri`. spotipulse writes it for
+you on first run; you only touch it to change the redirect URI or to use another Spotify app.
+
+### Album art: the `covers` setting
+
+| Value | What you get | When to use it |
+| ----- | ------------ | -------------- |
+| `"blocks"` **(default)** | Cover art drawn with colored half-block characters. Plain text, so it can never leave anything behind on screen. | Everywhere. Recommended on Windows Terminal. |
+| `"auto"` | Real images through your terminal's graphics protocol (Sixel, or Kitty's). The sharpest result. | Kitty, WezTerm, foot, iTerm2 — terminals that redraw graphics cleanly. |
+| `"unicode"` | A coarser text-only rendering (one block per cell instead of two). | Terminals that mangle half-blocks, or if you prefer a chunkier look. |
+| `"off"` | No artwork at all, just text. | Slow connections, or if you simply don't want images. |
+
+```toml
+[app]
+covers = "auto"
+```
+
+> **Why `"blocks"` is the default:** with `"auto"`, some terminals (Windows Terminal among them) leave
+> leftover pixels of a cover on screen after switching tabs, and make the whole view flicker while you
+> select text with the mouse. If you see either of those, switch back to `"blocks"` or `"off"`.
+
+Recap card exports always use the real cover images, whatever this setting is: it only affects the terminal.
 
 ## Troubleshooting
 
