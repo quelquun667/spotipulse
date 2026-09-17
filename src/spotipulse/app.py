@@ -129,6 +129,8 @@ class SpotipulseApp(App):
         self.start_mini = mini
         self.disk = disk
         self.logged_out = False
+        # Before compose(): the cover widgets are built there, so the mode has to be set first.
+        set_cover_mode(config.covers)
         self._top_cache: dict[str, TopData] = {}
         self._top_lock = threading.Lock()
         # Periods already fetched live this session: the disk cache is only a startup shortcut.
@@ -152,7 +154,6 @@ class SpotipulseApp(App):
         yield Footer()
 
     def on_mount(self) -> None:
-        set_cover_mode(self.config.covers)
         self.register_theme(SPOTIPULSE_THEME)
         self.theme = "spotipulse"
         if self.start_mini:
