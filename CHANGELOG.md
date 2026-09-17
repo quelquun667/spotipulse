@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Profile tab: avatar, liked songs / saved albums / playlists / followed artists counts, favorites of the
   last 4 weeks and last year, playlist list
 - Tabs switch with `1`–`6`, or the unshifted AZERTY top row
+- `Ctrl+L` redraws the screen, and screens repaint fully when an overlay closes
 - Asks to log in again when a new version needs extra Spotify permissions
 - PNG recap card export (`e`): cover art, top 5 tracks and artists with artwork, genre pills and a
   background tinted by the #1 cover

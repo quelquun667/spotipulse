@@ -40,6 +40,7 @@ SECTIONS: list[tuple[str, list[tuple[str, str]]]] = [
             ("e", "export a PNG recap of the selected period"),
             ("Tab", "move focus between widgets"),
             ("? / ,", "show / hide this help"),
+            ("Ctrl+L", "redraw the screen (if your terminal leaves artifacts)"),
             ("L", "log out and quit"),
             ("q", "quit"),
         ],

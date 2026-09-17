@@ -79,6 +79,7 @@ class SplashScreen(Screen):
     def _close(self) -> None:
         if self.app.screen is self:
             self.app.pop_screen()
+            self.app.action_redraw()
 
 
 class SpotipulseApp(App):
@@ -102,6 +103,7 @@ class SpotipulseApp(App):
         Binding("m", "set_period('medium_term')", "6 Months", show=False),
         Binding("y", "set_period('long_term')", "1 Year", show=False),
         Binding("c", "toggle_mini", "Compact"),
+        Binding("ctrl+l", "redraw", "Redraw", show=False),
         # "comma" is where ? sits on an AZERTY keyboard, so no Shift needed there either.
         Binding("question_mark,comma,f1", "toggle_help", "Help", key_display="?"),
         Binding("r", "refresh", "Refresh"),
@@ -237,12 +239,27 @@ class SpotipulseApp(App):
 
     def _close_overlays(self) -> None:
         """Back to the dashboard from the compact view or the help overlay."""
+        closed = False
         while len(self.screen_stack) > 1 and isinstance(self.screen, (MiniScreen, HelpScreen, SplashScreen)):
             self.pop_screen()
+            closed = True
+        if closed:
+            self.action_redraw()
+
+    def action_redraw(self) -> None:
+        """Repaint every cell.
+
+        Textual only redraws what changed, so terminals drawing cover art with their image protocol can
+        leave a stale line behind when a screen closes. Marking everything dirty wipes it.
+        """
+        self.refresh(layout=True)
+        for widget in self.screen.walk_children():
+            widget.refresh()
 
     def action_toggle_mini(self) -> None:
         if isinstance(self.screen, MiniScreen):
             self.pop_screen()
+            self.action_redraw()
         else:
             self._close_overlays()
             self.push_screen(MiniScreen())
@@ -250,6 +267,7 @@ class SpotipulseApp(App):
     def action_toggle_help(self) -> None:
         if isinstance(self.screen, HelpScreen):
             self.pop_screen()
+            self.action_redraw()
         else:
             self.push_screen(HelpScreen())
 

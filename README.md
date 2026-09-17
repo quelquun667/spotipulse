@@ -202,6 +202,7 @@ spotipulse --version     print the version
 | `c`               | compact view on / off                                |
 | `?` or `,`        | show all keyboard shortcuts (`,` so AZERTY needs no Shift) |
 | `r`               | refresh everything                                   |
+| `Ctrl+L`          | redraw the screen (clears terminal artifacts)        |
 | `e`               | export a PNG recap of the selected period            |
 | `L` (Shift + l)   | log out and quit                                     |
 | `q`               | quit                                                 |
@@ -268,7 +269,7 @@ Recap card exports always use the real cover images, whatever this setting is: i
 | **Spotify refused the request** (403) | Same cause: add your account's email under **User Management** in the Spotify dashboard. |
 | The browser never opens | Copy the address printed in the terminal into your browser. |
 | History tab is empty | Normal at first: plays are logged while spotipulse is open, after 30 s of each track. |
-| Leftover bits of image on screen, or flicker when selecting text | Your terminal's image protocol is misbehaving. Set `covers = "blocks"` (or `"off"`) in `config.toml`. |
+| Leftover bits of image on screen, or flicker when selecting text | Your terminal's image protocol is misbehaving. Press `Ctrl+L` to redraw; if it keeps happening, set `covers = "blocks"` (or `"off"`) in `config.toml`. |
 | Covers look blocky | You're on `covers = "blocks"`. Set `covers = "auto"` in `config.toml` for real images. |
 
 ## Roadmap
