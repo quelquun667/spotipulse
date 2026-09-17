@@ -33,7 +33,16 @@ tools which only wrap the API can't show.
 - **Recently Played**: your last 50 tracks with timestamps and cover art
 - **Profile**: your name and avatar, liked songs, saved albums, playlists and followed artists counts,
   your favorite track/artist/genre of the last 4 weeks and last year, and your playlists
-- **Export recap**: press `e` to save a Wrapped-style PNG card of your current top stats
+- **Export recap**: press `e` to save a Wrapped-style PNG card (1080×1350) of the selected period: your
+  #1 track with its cover, top 5 tracks and artists with their artwork, top genres and listening time, on a
+  background tinted by your #1 cover
+- **Compact view**: press `c` (or start with `spotipulse --mini`) for just what's playing, readable in a tiny
+  terminal window
+- **Adapts to your window**: panels, covers and table columns resize or step aside as the terminal gets
+  narrower or shorter; tabs that no longer fit scroll
+- **Instant start**: the last tops, profile, recently played list and covers are kept on disk, shown
+  immediately at launch, then refreshed in the background
+- **Help**: press `?` for every keyboard shortcut
 - Spotify-green theme, rounded panels, full keyboard and mouse support
 
 ## Screenshot
@@ -164,6 +173,7 @@ Everything lives in `~/.config/spotipulse/`, outside the repository:
 | `config.toml`  | your Client ID/Secret and settings (see [`config.example.toml`](config.example.toml)) |
 | `token_cache`  | your Spotify login token                             |
 | `history.db`   | your local listening history (SQLite)                |
+| `cache/`       | last fetched data and covers, for an instant start (safe to delete) |
 
 > **About local history:** spotipulse logs a track once you've listened to it for 30 seconds **while
 > spotipulse is open**. Leave it running on the Now Playing tab and the History tab fills up over time.
@@ -174,6 +184,7 @@ Everything lives in `~/.config/spotipulse/`, outside the repository:
 spotipulse               launch the dashboard
 spotipulse --logout      forget your Spotify login
 spotipulse --no-splash   skip the startup logo
+spotipulse --mini        start in the compact view
 spotipulse --version     print the version
 ```
 
@@ -188,6 +199,8 @@ spotipulse --version     print the version
 | `Esc`             | clear the filter                                     |
 | `↑` / `↓`         | move through a table (updates the cover preview)     |
 | `Tab`             | move focus between widgets                           |
+| `c`               | compact view on / off                                |
+| `?`               | show all keyboard shortcuts                          |
 | `r`               | refresh everything                                   |
 | `e`               | export a PNG recap of the selected period            |
 | `L` (Shift + l)   | log out and quit                                     |
@@ -195,6 +208,12 @@ spotipulse --version     print the version
 
 Recap cards are saved to `~/Pictures`, or to your home folder if that doesn't exist. Set `export_dir` in
 `config.toml` to change it.
+
+### Window size
+
+spotipulse works from about 60×15 upwards. Below 140 columns the Top and Recently Played cover previews
+step aside; below 100 columns the Top tables stack and the Now Playing cover hides; below 36 rows the header
+and the "Up next" panel make room. For a very small window, use the compact view (`c`).
 
 ### Cover art
 

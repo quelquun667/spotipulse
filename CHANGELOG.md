@@ -24,5 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   last 4 weeks and last year, playlist list
 - Tabs switch with `1`–`6`, or the unshifted AZERTY top row
 - Asks to log in again when a new version needs extra Spotify permissions
-- PNG recap card export (`e`)
+- PNG recap card export (`e`): cover art, top 5 tracks and artists with artwork, genre pills and a
+  background tinted by the #1 cover
+- Compact view (`c`, or `spotipulse --mini`) and a keyboard shortcuts overlay (`?`)
+- Responsive layout for narrow and short terminal windows
+- On-disk cache of tops, profile, recently played and covers for an instant start
 - Logo assets: SVG, PNG, block-art splash and GitHub social preview
