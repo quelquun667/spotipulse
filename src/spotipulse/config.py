@@ -9,6 +9,10 @@ from pathlib import Path
 
 DEFAULT_REDIRECT_URI = "http://127.0.0.1:8888/callback"
 DEFAULT_REFRESH_INTERVAL = 3.0
+# "blocks" is the safe default: terminal image protocols (auto) look sharper but leave artifacts
+# behind in some terminals, and flicker while you select text.
+DEFAULT_COVERS = "blocks"
+COVER_MODES = ("blocks", "auto", "unicode", "off")
 
 
 def config_dir() -> Path:
@@ -48,6 +52,7 @@ class Config:
     redirect_uri: str = DEFAULT_REDIRECT_URI
     refresh_interval: float = DEFAULT_REFRESH_INTERVAL
     export_dir: Path | None = None
+    covers: str = DEFAULT_COVERS
 
     def resolved_export_dir(self) -> Path:
         if self.export_dir:
@@ -78,6 +83,10 @@ def load_config(path: Path | None = None) -> Config | None:
     except (TypeError, ValueError) as exc:
         raise ConfigError(f"{path}: app.refresh_interval must be a number") from exc
 
+    covers = str(app.get("covers", DEFAULT_COVERS)).strip().lower()
+    if covers not in COVER_MODES:
+        raise ConfigError(f"{path}: app.covers must be one of {', '.join(COVER_MODES)}")
+
     export_dir = app.get("export_dir")
     return Config(
         client_id=client_id,
@@ -85,6 +94,7 @@ def load_config(path: Path | None = None) -> Config | None:
         redirect_uri=str(spotify.get("redirect_uri", DEFAULT_REDIRECT_URI)).strip() or DEFAULT_REDIRECT_URI,
         refresh_interval=max(1.0, refresh),
         export_dir=Path(export_dir).expanduser() if export_dir else None,
+        covers=covers,
     )
 
 
@@ -105,6 +115,7 @@ def save_config(client_id: str, client_secret: str, path: Path | None = None) ->
         f"redirect_uri = {_toml_string(DEFAULT_REDIRECT_URI)}\n\n"
         "[app]\n"
         f"refresh_interval = {int(DEFAULT_REFRESH_INTERVAL)}\n"
+        f'covers = "{DEFAULT_COVERS}"\n'
     )
     path.write_text(content, encoding="utf-8")
     try:

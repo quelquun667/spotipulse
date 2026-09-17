@@ -7,10 +7,43 @@ from functools import lru_cache
 
 from PIL import Image, ImageDraw
 from textual.containers import Vertical
-from textual.widgets import DataTable
+from textual.widget import Widget
+from textual.widgets import DataTable, Static
 
 # Imported before Textual starts: textual-image probes the terminal's cell size at import time.
-from textual_image.widget import Image as CoverArt  # noqa: F401
+from textual_image.widget import HalfcellImage, UnicodeImage
+from textual_image.widget import Image as AutoImage
+
+# How album art is drawn. "auto" uses the terminal's image protocol (Sixel / Kitty): sharper, but some
+# terminals leave artifacts behind and flicker when you select text. "blocks" is plain colored text.
+COVER_MODES = ("blocks", "auto", "unicode", "off")
+_COVER_WIDGETS = {"blocks": HalfcellImage, "auto": AutoImage, "unicode": UnicodeImage}
+_cover_mode = "blocks"
+
+
+def set_cover_mode(mode: str) -> None:
+    global _cover_mode
+    _cover_mode = mode if mode in COVER_MODES else "blocks"
+
+
+class NoCover(Static):
+    """Stand-in used when covers are turned off: keeps the layout, draws nothing."""
+
+    @property
+    def image(self):
+        return None
+
+    @image.setter
+    def image(self, value) -> None:
+        pass
+
+
+def cover_art(image=None, **kwargs) -> Widget:
+    """An album-art widget honouring the `covers` setting. Set `.image` to a PIL image to update it."""
+    if _cover_mode == "off":
+        return NoCover(**kwargs)
+    return _COVER_WIDGETS[_cover_mode](image, **kwargs)
+
 
 # (key, label, minimum width, share of the leftover space). A share of 0 keeps the column at its minimum.
 ColumnSpec = tuple[str, str, int, int]

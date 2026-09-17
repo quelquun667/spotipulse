@@ -52,3 +52,17 @@ def test_refresh_interval_has_a_floor(isolated_home):
     config = load_config()
     assert config.refresh_interval == 1.0
     assert config.resolved_export_dir().name == "out"
+
+
+def test_covers_defaults_to_blocks_and_rejects_nonsense(isolated_home):
+    save_config("id", "secret")
+    assert load_config().covers == "blocks"
+    isolated_home.joinpath("other.toml").write_text(
+        '[spotify]\nclient_id = "a"\nclient_secret = "b"\n[app]\ncovers = "AUTO"\n', encoding="utf-8"
+    )
+    assert load_config(isolated_home / "other.toml").covers == "auto"
+    isolated_home.joinpath("bad.toml").write_text(
+        '[spotify]\nclient_id = "a"\nclient_secret = "b"\n[app]\ncovers = "sixel"\n', encoding="utf-8"
+    )
+    with pytest.raises(ConfigError):
+        load_config(isolated_home / "bad.toml")

@@ -11,7 +11,7 @@ from textual.widgets import DataTable, Static
 
 from ..api import Profile, SpotifyAPIError
 from ..cache import decode_profile, encode_profile
-from . import CoverArt, LazyView, fit_columns, placeholder_cover
+from . import LazyView, cover_art, fit_columns, placeholder_cover
 
 
 def count_label(value: int | None) -> str:
@@ -29,7 +29,7 @@ class ProfileView(LazyView):
 
     def compose(self) -> ComposeResult:
         with Horizontal(id="profile-header"):
-            yield CoverArt(placeholder_cover(), id="profile-avatar")
+            yield cover_art(placeholder_cover(), id="profile-avatar")
             with Vertical(id="profile-identity"):
                 yield Static("Loading…", id="profile-name")
                 yield Static("", id="profile-link")
@@ -94,7 +94,7 @@ class ProfileView(LazyView):
         self.query_one("#profile-name", Static).update(f"[red]{escape(message)}[/red]")
 
     def _loaded(self, profile: Profile, avatar, favorites) -> None:
-        self.query_one("#profile-avatar", CoverArt).image = avatar
+        self.query_one("#profile-avatar").image = avatar
         self.query_one("#profile-name", Static).update(f"[b]{escape(profile.display_name)}[/b]")
         self.query_one("#profile-link", Static).update(f"[dim]{escape(profile.url or '')}[/dim]")
         cards = (

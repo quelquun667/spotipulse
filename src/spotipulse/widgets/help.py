@@ -39,7 +39,7 @@ SECTIONS: list[tuple[str, list[tuple[str, str]]]] = [
             ("r", "refresh everything"),
             ("e", "export a PNG recap of the selected period"),
             ("Tab", "move focus between widgets"),
-            ("?", "show / hide this help"),
+            ("? / ,", "show / hide this help"),
             ("L", "log out and quit"),
             ("q", "quit"),
         ],

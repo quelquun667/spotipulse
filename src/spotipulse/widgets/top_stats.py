@@ -12,7 +12,7 @@ from textual.widgets import DataTable, Input, Static, Tab, Tabs
 
 from ..api import TIME_RANGES, Artist, SpotifyAPIError, Track
 from ..stats import format_clock, format_duration, rank_changes, total_runtime_ms
-from . import CoverArt, LazyView, fit_columns, placeholder_cover
+from . import LazyView, cover_art, fit_columns, placeholder_cover
 
 TOP_ARTISTS_SHOWN = 50
 TRACK_COLUMNS = [
@@ -85,7 +85,7 @@ class TopStatsView(LazyView):
                 yield DataTable(id="top-artists", cursor_type="row")
             with Vertical(classes="panel", id="top-art-panel") as art_panel:
                 art_panel.border_title = "Cover"
-                yield CoverArt(placeholder_cover(), id="top-art", classes="art")
+                yield cover_art(placeholder_cover(), id="top-art", classes="art")
                 yield Static("", id="top-art-caption")
 
     def on_mount(self) -> None:
@@ -260,4 +260,4 @@ class TopStatsView(LazyView):
     @work(thread=True, exclusive=True, group="top-art")
     def _load_art(self, url: str | None) -> None:
         image = self.app.api.image(url) or placeholder_cover()
-        self.app.call_from_thread(setattr, self.query_one("#top-art", CoverArt), "image", image)
+        self.app.call_from_thread(setattr, self.query_one("#top-art"), "image", image)

@@ -217,9 +217,11 @@ and the "Up next" panel make room. For a very small window, use the compact view
 
 ### Cover art
 
-Covers use the best image protocol your terminal supports: Sixel or the Kitty graphics protocol, with a
-colored half-block fallback everywhere else. Windows Terminal, WezTerm, Kitty, iTerm2 and foot all show real
-images.
+By default, covers are drawn with colored half-blocks: plain text that every terminal handles cleanly.
+For sharper artwork, set `covers = "auto"` in `~/.config/spotipulse/config.toml` to use your terminal's
+image protocol (Sixel or Kitty). It looks better, but some terminals — Windows Terminal among them — leave
+leftover pixels on screen and flicker while you select text. The other values are `"unicode"` (coarser
+fallback) and `"off"` (no artwork).
 
 ## Troubleshooting
 
@@ -233,7 +235,8 @@ images.
 | **Spotify refused the request** (403) | Same cause: add your account's email under **User Management** in the Spotify dashboard. |
 | The browser never opens | Copy the address printed in the terminal into your browser. |
 | History tab is empty | Normal at first: plays are logged while spotipulse is open, after 30 s of each track. |
-| Covers look blocky | Your terminal doesn't support Sixel/Kitty images. Try Windows Terminal, WezTerm or Kitty. |
+| Covers look blocky | That's the default `covers = "blocks"` mode. Set `covers = "auto"` in `config.toml` for real images. |
+| Leftover bits of image on screen, or flicker when selecting text | Your terminal's image protocol is misbehaving. Set `covers = "blocks"` (the default) or `"off"` in `config.toml`. |
 
 ## Roadmap
 

@@ -19,6 +19,25 @@ def test_columns_never_shrink_below_their_minimum():
 
 def test_help_lists_every_tab_key():
     keys = [key for _, rows in SECTIONS for key, _ in rows]
-    for expected in ("1 / &", "6 / -", "c", "?", "q"):
+    for expected in ("1 / &", "6 / -", "c", "? / ,", "q"):
         assert expected in keys
     assert help_table().row_count > len(keys)
+
+
+def test_cover_art_follows_the_configured_mode():
+    from spotipulse.widgets import NoCover, cover_art, set_cover_mode
+
+    try:
+        set_cover_mode("blocks")
+        assert type(cover_art()).__name__ == "HalfcellImage"
+        set_cover_mode("unicode")
+        assert type(cover_art()).__name__ == "UnicodeImage"
+        set_cover_mode("off")
+        widget = cover_art(id="x")
+        assert isinstance(widget, NoCover)
+        widget.image = "ignored"  # setting a cover on it is a no-op
+        assert widget.image is None
+        set_cover_mode("nonsense")  # unknown values fall back to blocks
+        assert type(cover_art()).__name__ == "HalfcellImage"
+    finally:
+        set_cover_mode("blocks")

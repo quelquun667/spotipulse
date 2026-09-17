@@ -28,5 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   background tinted by the #1 cover
 - Compact view (`c`, or `spotipulse --mini`) and a keyboard shortcuts overlay (`?`)
 - Responsive layout for narrow and short terminal windows
+- `covers` setting ("blocks" by default, or "auto" / "unicode" / "off") choosing how album art is drawn
 - On-disk cache of tops, profile, recently played and covers for an instant start
 - Logo assets: SVG, PNG, block-art splash and GitHub social preview

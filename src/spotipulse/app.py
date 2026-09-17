@@ -23,6 +23,7 @@ from .config import Config
 from .db import HistoryDB
 from .genres import GenreCount, fill_missing_genres, top_genres
 from .stats import format_duration, listened_ms
+from .widgets import set_cover_mode
 from .widgets.genres import GenresView
 from .widgets.help import HelpScreen
 from .widgets.history import HistoryView
@@ -101,7 +102,8 @@ class SpotipulseApp(App):
         Binding("m", "set_period('medium_term')", "6 Months", show=False),
         Binding("y", "set_period('long_term')", "1 Year", show=False),
         Binding("c", "toggle_mini", "Compact"),
-        Binding("question_mark,f1", "toggle_help", "Help", key_display="?"),
+        # "comma" is where ? sits on an AZERTY keyboard, so no Shift needed there either.
+        Binding("question_mark,comma,f1", "toggle_help", "Help", key_display="?"),
         Binding("r", "refresh", "Refresh"),
         Binding("e", "export", "Export"),
         Binding("L", "logout", "Log out", show=False),
@@ -150,6 +152,7 @@ class SpotipulseApp(App):
         yield Footer()
 
     def on_mount(self) -> None:
+        set_cover_mode(self.config.covers)
         self.register_theme(SPOTIPULSE_THEME)
         self.theme = "spotipulse"
         if self.start_mini:

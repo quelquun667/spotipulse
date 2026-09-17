@@ -14,7 +14,7 @@ from textual.widgets import DataTable, Static
 from ..api import PlayedItem, SpotifyAPIError
 from ..cache import decode_recent, encode_recent
 from ..stats import format_clock
-from . import CoverArt, LazyView, fit_columns, placeholder_cover
+from . import LazyView, cover_art, fit_columns, placeholder_cover
 
 
 def format_played_at(played_at: datetime, now: datetime | None = None) -> str:
@@ -54,7 +54,7 @@ class RecentView(LazyView):
                 yield DataTable(id="recent-table", cursor_type="row")
             with Vertical(classes="panel", id="recent-art-panel") as art_panel:
                 art_panel.border_title = "Cover"
-                yield CoverArt(placeholder_cover(), id="recent-art", classes="art")
+                yield cover_art(placeholder_cover(), id="recent-art", classes="art")
                 yield Static("", id="recent-art-caption")
 
     def on_mount(self) -> None:
@@ -136,4 +136,4 @@ class RecentView(LazyView):
     @work(thread=True, exclusive=True, group="recent-art")
     def _load_art(self, url: str | None) -> None:
         image = self.app.api.image(url) or placeholder_cover()
-        self.app.call_from_thread(setattr, self.query_one("#recent-art", CoverArt), "image", image)
+        self.app.call_from_thread(setattr, self.query_one("#recent-art"), "image", image)

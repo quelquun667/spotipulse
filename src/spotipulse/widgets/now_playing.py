@@ -14,7 +14,7 @@ from textual.widgets import ProgressBar, Static
 
 from ..api import NowPlaying, SpotifyAPIError, Track
 from ..stats import format_clock
-from . import CoverArt, placeholder_cover
+from . import cover_art, placeholder_cover
 
 # Spotify counts a stream after 30 s; shorter tracks count at half their length.
 COUNT_AFTER_MS = 30_000
@@ -94,7 +94,7 @@ class NowPlayingView(Vertical):
     def compose(self) -> ComposeResult:
         with Horizontal(id="np-body"):
             with Vertical(id="np-art-box"):
-                yield CoverArt(placeholder_cover(), id="np-art")
+                yield cover_art(placeholder_cover(), id="np-art")
             with Vertical(id="np-info"):
                 yield Static("CONNECTING…", id="np-status")
                 yield Static("", id="np-title")
@@ -173,7 +173,7 @@ class NowPlayingView(Vertical):
         self.queue = queue
         if cover is not None:
             self._cover_url = url
-            self.query_one("#np-art", CoverArt).image = cover
+            self.query_one("#np-art").image = cover
         status = self.query_one("#np-status", Static)
         if state is None:
             status.update("NOTHING PLAYING")
