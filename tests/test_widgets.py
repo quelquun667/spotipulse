@@ -37,7 +37,9 @@ def test_cover_art_follows_the_configured_mode():
         assert isinstance(widget, NoCover)
         widget.image = "ignored"  # setting a cover on it is a no-op
         assert widget.image is None
-        set_cover_mode("nonsense")  # unknown values fall back to blocks
-        assert type(cover_art()).__name__ == "HalfcellImage"
+        set_cover_mode("auto")
+        auto_widget = type(cover_art())
+        set_cover_mode("nonsense")  # unknown values fall back to the default mode
+        assert type(cover_art()) is auto_widget
     finally:
-        set_cover_mode("blocks")
+        set_cover_mode("auto")

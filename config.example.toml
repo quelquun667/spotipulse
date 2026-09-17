@@ -13,11 +13,10 @@ redirect_uri = "http://127.0.0.1:8888/callback"
 # Seconds between "now playing" refreshes.
 refresh_interval = 3
 # How album art is drawn:
-#   "blocks"  colored half-blocks, works everywhere (default)
-#   "auto"    the terminal's image protocol (Sixel / Kitty): sharper, but some terminals leave
-#             leftovers on screen and flicker when you select text
+#   "auto"    the terminal's image protocol (Sixel / Kitty), real images (default)
+#   "blocks"  colored half-blocks: plain text, no leftovers or flicker, works everywhere
 #   "unicode" coarser text-only fallback
 #   "off"     no artwork at all
-covers = "blocks"
+covers = "auto"
 # Where exported recap cards are saved. Defaults to ~/Pictures (or your home folder).
 # export_dir = "~/Pictures"

@@ -222,13 +222,13 @@ spotipulse. [`config.example.toml`](config.example.toml) shows the whole file.
 
 | Setting | Default | What it does |
 | ------- | ------- | ------------ |
-| `covers` | `"blocks"` | how album art is drawn — see the table below |
+| `covers` | `"auto"` | how album art is drawn — see the table below |
 | `refresh_interval` | `3` | seconds between "now playing" refreshes (minimum 1) |
 | `export_dir` | `~/Pictures` | where `e` saves recap cards; falls back to your home folder |
 
 ```toml
 [app]
-covers = "blocks"
+covers = "auto"
 refresh_interval = 3
 export_dir = "~/Pictures"
 ```
@@ -240,19 +240,19 @@ you on first run; you only touch it to change the redirect URI or to use another
 
 | Value | What you get | When to use it |
 | ----- | ------------ | -------------- |
-| `"blocks"` **(default)** | Cover art drawn with colored half-block characters. Plain text, so it can never leave anything behind on screen. | Everywhere. Recommended on Windows Terminal. |
-| `"auto"` | Real images through your terminal's graphics protocol (Sixel, or Kitty's). The sharpest result. | Kitty, WezTerm, foot, iTerm2 — terminals that redraw graphics cleanly. |
+| `"auto"` **(default)** | Real images through your terminal's graphics protocol (Sixel, or Kitty's). The sharpest result. | Windows Terminal, Kitty, WezTerm, foot, iTerm2. |
+| `"blocks"` | Cover art drawn with colored half-block characters. Plain text, so it can never leave anything behind on screen. | If `"auto"` leaves leftovers on screen or flickers. |
 | `"unicode"` | A coarser text-only rendering (one block per cell instead of two). | Terminals that mangle half-blocks, or if you prefer a chunkier look. |
 | `"off"` | No artwork at all, just text. | Slow connections, or if you simply don't want images. |
 
 ```toml
 [app]
-covers = "auto"
+covers = "blocks"
 ```
 
-> **Why `"blocks"` is the default:** with `"auto"`, some terminals (Windows Terminal among them) leave
-> leftover pixels of a cover on screen after switching tabs, and make the whole view flicker while you
-> select text with the mouse. If you see either of those, switch back to `"blocks"` or `"off"`.
+> **If images misbehave:** some terminals (Windows Terminal among them) leave leftover pixels of a cover on
+> screen after switching tabs, and flicker while you select text with the mouse. That's the terminal's
+> graphics protocol, not spotipulse — switch to `"blocks"` and it goes away.
 
 Recap card exports always use the real cover images, whatever this setting is: it only affects the terminal.
 
@@ -268,8 +268,8 @@ Recap card exports always use the real cover images, whatever this setting is: i
 | **Spotify refused the request** (403) | Same cause: add your account's email under **User Management** in the Spotify dashboard. |
 | The browser never opens | Copy the address printed in the terminal into your browser. |
 | History tab is empty | Normal at first: plays are logged while spotipulse is open, after 30 s of each track. |
-| Covers look blocky | That's the default `covers = "blocks"` mode. Set `covers = "auto"` in `config.toml` for real images. |
-| Leftover bits of image on screen, or flicker when selecting text | Your terminal's image protocol is misbehaving. Set `covers = "blocks"` (the default) or `"off"` in `config.toml`. |
+| Leftover bits of image on screen, or flicker when selecting text | Your terminal's image protocol is misbehaving. Set `covers = "blocks"` (or `"off"`) in `config.toml`. |
+| Covers look blocky | You're on `covers = "blocks"`. Set `covers = "auto"` in `config.toml` for real images. |
 
 ## Roadmap
 

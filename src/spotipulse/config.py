@@ -9,9 +9,9 @@ from pathlib import Path
 
 DEFAULT_REDIRECT_URI = "http://127.0.0.1:8888/callback"
 DEFAULT_REFRESH_INTERVAL = 3.0
-# "blocks" is the safe default: terminal image protocols (auto) look sharper but leave artifacts
-# behind in some terminals, and flicker while you select text.
-DEFAULT_COVERS = "blocks"
+# "auto" uses the terminal's image protocol (Sixel / Kitty) for real cover art. Some terminals redraw
+# it badly (leftovers on screen, flicker while selecting text) -- "blocks" is the safe fallback.
+DEFAULT_COVERS = "auto"
 COVER_MODES = ("blocks", "auto", "unicode", "off")
 
 

@@ -56,7 +56,7 @@ def test_refresh_interval_has_a_floor(isolated_home):
 
 def test_covers_defaults_to_blocks_and_rejects_nonsense(isolated_home):
     save_config("id", "secret")
-    assert load_config().covers == "blocks"
+    assert load_config().covers == "auto"
     isolated_home.joinpath("other.toml").write_text(
         '[spotify]\nclient_id = "a"\nclient_secret = "b"\n[app]\ncovers = "AUTO"\n', encoding="utf-8"
     )

@@ -14,16 +14,16 @@ from textual.widgets import DataTable, Static
 from textual_image.widget import HalfcellImage, UnicodeImage
 from textual_image.widget import Image as AutoImage
 
-# How album art is drawn. "auto" uses the terminal's image protocol (Sixel / Kitty): sharper, but some
-# terminals leave artifacts behind and flicker when you select text. "blocks" is plain colored text.
+# How album art is drawn. "auto" (the default) uses the terminal's image protocol (Sixel / Kitty) for real
+# images; "blocks" draws them with colored half-block characters, which every terminal redraws cleanly.
 COVER_MODES = ("blocks", "auto", "unicode", "off")
 _COVER_WIDGETS = {"blocks": HalfcellImage, "auto": AutoImage, "unicode": UnicodeImage}
-_cover_mode = "blocks"
+_cover_mode = "auto"
 
 
 def set_cover_mode(mode: str) -> None:
     global _cover_mode
-    _cover_mode = mode if mode in COVER_MODES else "blocks"
+    _cover_mode = mode if mode in COVER_MODES else "auto"
 
 
 class NoCover(Static):
