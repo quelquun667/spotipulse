@@ -1,13 +1,10 @@
 """spotipulse — a terminal dashboard for your Spotify stats."""
 
 from importlib import resources
-from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
-try:
-    __version__ = version("spotipulse")
-except PackageNotFoundError:  # running from a source checkout
-    __version__ = "0.1.0"
+# Single source of truth for the version (pyproject.toml reads it from here).
+__version__ = "0.1.0"
 
 
 def asset_path(name: str) -> Path | None:

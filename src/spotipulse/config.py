@@ -32,6 +32,11 @@ def db_path() -> Path:
     return config_dir() / "history.db"
 
 
+def cache_dir() -> Path:
+    """Last-known data and downloaded covers, so the dashboard shows up instantly on launch."""
+    return config_dir() / "cache"
+
+
 class ConfigError(Exception):
     """The config file exists but can't be used."""
 

@@ -174,11 +174,13 @@ class SpotifyAPI:
     client: spotipy.Spotify
     _image_cache: dict[str, Image.Image] = field(default_factory=dict)
     _context_names: dict[str, str | None] = field(default_factory=dict)
+    # Optional DiskCache (see cache.py): covers survive restarts, so they show up instantly.
+    disk: Any = None
     _lock: threading.Lock = field(default_factory=threading.Lock)
 
     @classmethod
-    def from_oauth(cls, auth_manager: spotipy.oauth2.SpotifyOAuth) -> SpotifyAPI:
-        return cls(spotipy.Spotify(auth_manager=auth_manager, requests_timeout=10, retries=2))
+    def from_oauth(cls, auth_manager: spotipy.oauth2.SpotifyOAuth, disk: Any = None) -> SpotifyAPI:
+        return cls(spotipy.Spotify(auth_manager=auth_manager, requests_timeout=10, retries=2), disk=disk)
 
     def _call(self, fn, *args, **kwargs) -> Any:
         try:
@@ -281,6 +283,10 @@ class SpotifyAPI:
         total = data.get("total") if isinstance(data, dict) else None
         return int(total) if total is not None else None
 
+    def display_name(self) -> str | None:
+        me = self._call(self.client.current_user) or {}
+        return me.get("display_name") or me.get("id")
+
     def profile(self) -> Profile:
         me = self._call(self.client.current_user) or {}
         try:
@@ -308,12 +314,16 @@ class SpotifyAPI:
             cached = self._image_cache.get(url)
         if cached is not None:
             return cached
-        try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            image = Image.open(BytesIO(response.content)).convert("RGB")
-        except (requests.RequestException, OSError):
-            return None
+        image = self.disk.load_cover(url) if self.disk else None
+        if image is None:
+            try:
+                response = requests.get(url, timeout=10)
+                response.raise_for_status()
+                image = Image.open(BytesIO(response.content)).convert("RGB")
+            except (requests.RequestException, OSError):
+                return None
+            if self.disk:
+                self.disk.save_cover(url, image)
         with self._lock:
             if len(self._image_cache) > 200:
                 self._image_cache.clear()

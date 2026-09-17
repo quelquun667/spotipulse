@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "spotipulse"
-version = "0.1.0"
+dynamic = ["version"]
 description = "A terminal dashboard for your Spotify stats — now playing, top tracks & artists, listening history."
 readme = "README.md"
 license = "MIT"
@@ -39,6 +39,9 @@ Issues = "https://github.com/quelquun667/spotipulse/issues"
 
 [project.scripts]
 spotipulse = "spotipulse.cli:main"
+
+[tool.hatch.version]
+path = "src/spotipulse/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/spotipulse"]
