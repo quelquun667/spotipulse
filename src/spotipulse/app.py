@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import threading
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
@@ -17,12 +18,15 @@ from textual.widgets import Footer, Header, Static, TabbedContent, TabPane
 
 from . import asset_path
 from .api import PERIOD_DAYS, TIME_RANGES, Artist, SpotifyAPI, SpotifyAPIError, Track
+from .cache import DiskCache, decode_top, encode_top
 from .config import Config
 from .db import HistoryDB
 from .genres import GenreCount, fill_missing_genres, top_genres
 from .stats import format_duration, listened_ms
 from .widgets.genres import GenresView
+from .widgets.help import HelpScreen
 from .widgets.history import HistoryView
+from .widgets.mini import MiniScreen
 from .widgets.now_playing import NowPlayingView
 from .widgets.profile import ProfileView
 from .widgets.recent import RecentView
@@ -63,7 +67,7 @@ class SplashScreen(Screen):
             yield Static("your Spotify stats, in the terminal", id="splash-tagline")
 
     def on_mount(self) -> None:
-        self.set_timer(1.4, self._close)
+        self.set_timer(0.8, self._close)
 
     def on_key(self) -> None:
         self._close()
@@ -80,6 +84,9 @@ class SpotipulseApp(App):
     TITLE = "spotipulse"
     CSS_PATH = "theme.tcss"
     ENABLE_COMMAND_PALETTE = False
+    # Responsive layout: these classes land on the screen, theme.tcss adapts the panels to them.
+    HORIZONTAL_BREAKPOINTS = [(0, "-narrow"), (100, "-medium"), (140, "-wide")]
+    VERTICAL_BREAKPOINTS = [(0, "-short"), (36, "-tall")]
 
     BINDINGS = [
         # Digits, plus the unshifted AZERTY top row (& é " ' ( -) so French keyboards don't need Shift.
@@ -93,6 +100,8 @@ class SpotipulseApp(App):
         Binding("w", "set_period('short_term')", "4 Weeks", show=False),
         Binding("m", "set_period('medium_term')", "6 Months", show=False),
         Binding("y", "set_period('long_term')", "1 Year", show=False),
+        Binding("c", "toggle_mini", "Compact"),
+        Binding("question_mark,f1", "toggle_help", "Help", key_display="?"),
         Binding("r", "refresh", "Refresh"),
         Binding("e", "export", "Export"),
         Binding("L", "logout", "Log out", show=False),
@@ -101,15 +110,27 @@ class SpotipulseApp(App):
 
     period: reactive[str] = reactive("short_term")
 
-    def __init__(self, api: SpotifyAPI, db: HistoryDB, config: Config, splash: bool = True) -> None:
+    def __init__(
+        self,
+        api: SpotifyAPI,
+        db: HistoryDB,
+        config: Config,
+        splash: bool = True,
+        disk: DiskCache | None = None,
+        mini: bool = False,
+    ) -> None:
         super().__init__()
         self.api = api
         self.db = db
         self.config = config
-        self.splash = splash
+        self.splash = splash and not mini
+        self.start_mini = mini
+        self.disk = disk
         self.logged_out = False
         self._top_cache: dict[str, TopData] = {}
         self._top_lock = threading.Lock()
+        # Periods already fetched live this session: the disk cache is only a startup shortcut.
+        self._live_top: set[str] = set()
 
     def compose(self) -> ComposeResult:
         yield Header(icon="♪")
@@ -131,22 +152,58 @@ class SpotipulseApp(App):
     def on_mount(self) -> None:
         self.register_theme(SPOTIPULSE_THEME)
         self.theme = "spotipulse"
-        if self.splash:
+        if self.start_mini:
+            self.push_screen(MiniScreen())
+        elif self.splash:
             self.push_screen(SplashScreen())
 
     # ---------- shared data ----------
 
     def get_top(self, time_range: str) -> TopData:
-        """Blocking: call from a worker thread. Cached per period until refresh."""
+        """Blocking: call from a worker thread. Cached per period until refresh.
+
+        On the first call of a session, the last saved copy is returned straight away (if any)
+        and fresh data is fetched in the background; views are told to redraw once it lands.
+        """
         with self._top_lock:
             cached = self._top_cache.get(time_range)
             if cached:
                 return cached
-            tracks = self.api.top_tracks(time_range, limit=50)
-            artists = fill_missing_genres(self.api.top_artists(time_range, limit=50), self.api.artist)
-            data = TopData(tracks, artists, top_genres(artists))
-            self._top_cache[time_range] = data
-            return data
+            if self.disk and time_range not in self._live_top:
+                hit = self.disk.load_decoded(f"top_{time_range}", decode_top)
+                if hit:
+                    data = TopData(*hit[0])
+                    self._top_cache[time_range] = data
+                    self._live_top.add(time_range)
+                    threading.Thread(target=self._refresh_top, args=(time_range,), daemon=True).start()
+                    return data
+            return self._fetch_top(time_range)
+
+    def _fetch_top(self, time_range: str) -> TopData:
+        """Fetch from Spotify and store in memory + on disk. Caller holds `_top_lock`."""
+        tracks = self.api.top_tracks(time_range, limit=50)
+        artists = fill_missing_genres(self.api.top_artists(time_range, limit=50), self.api.artist)
+        data = TopData(tracks, artists, top_genres(artists))
+        self._top_cache[time_range] = data
+        self._live_top.add(time_range)
+        if self.disk:
+            self.disk.save(f"top_{time_range}", encode_top(data.tracks, data.artists, data.genres))
+        return data
+
+    def _refresh_top(self, time_range: str) -> None:
+        try:
+            with self._top_lock:
+                self._fetch_top(time_range)
+        except SpotifyAPIError:
+            return  # keep showing the cached copy
+        with contextlib.suppress(RuntimeError):  # the app may have exited meanwhile
+            self.call_from_thread(self._top_refreshed)
+
+    def _top_refreshed(self) -> None:
+        for view_type in (TopStatsView, GenresView, ProfileView):
+            for view in self.query(view_type):
+                view.stale = True
+        self._activate(self._main_tabs().active)
 
     def listening_summary(self, time_range: str) -> tuple[str | None, str]:
         """(short label for the recap card, longer line for the Top tab header)."""
@@ -171,8 +228,30 @@ class SpotipulseApp(App):
 
     # ---------- actions ----------
 
+    def _main_tabs(self) -> TabbedContent:
+        return self.query_one("#tabs", TabbedContent)
+
+    def _close_overlays(self) -> None:
+        """Back to the dashboard from the compact view or the help overlay."""
+        while len(self.screen_stack) > 1 and isinstance(self.screen, (MiniScreen, HelpScreen, SplashScreen)):
+            self.pop_screen()
+
+    def action_toggle_mini(self) -> None:
+        if isinstance(self.screen, MiniScreen):
+            self.pop_screen()
+        else:
+            self._close_overlays()
+            self.push_screen(MiniScreen())
+
+    def action_toggle_help(self) -> None:
+        if isinstance(self.screen, HelpScreen):
+            self.pop_screen()
+        else:
+            self.push_screen(HelpScreen())
+
     def action_show_tab(self, tab: str) -> None:
-        self.query_one("#tabs", TabbedContent).active = tab
+        self._close_overlays()
+        self._main_tabs().active = tab
         # Put the keyboard on the tab's main table so arrows work straight away.
         table_id = {"top": "#top-tracks", "recent": "#recent-table"}.get(tab)
         if table_id:
@@ -208,10 +287,11 @@ class SpotipulseApp(App):
     def action_refresh(self) -> None:
         with self._top_lock:
             self._top_cache.clear()
+            self._live_top.update(TIME_RANGES)
         self.query_one(NowPlayingView).poll()
         for view_type in (TopStatsView, GenresView, HistoryView, RecentView, ProfileView):
             self.query_one(view_type).stale = True
-        self._activate(self.query_one("#tabs", TabbedContent).active)
+        self._activate(self._main_tabs().active)
         self.notify("Refreshing…", timeout=1.5)
 
     @work(thread=True, exclusive=True, group="export")
@@ -235,11 +315,26 @@ class SpotipulseApp(App):
                 label,
                 self.config.resolved_export_dir(),
                 now=datetime.now(),
+                images=self.api.image,
+                user_name=self._display_name(),
             )
         except OSError as exc:
             self.call_from_thread(self.notify, f"Couldn't save the recap: {exc}", severity="error")
             return
         self.call_from_thread(self.notify, f"Recap saved to {path}", title="Exported", timeout=8)
+
+    def _display_name(self) -> str | None:
+        """Blocking. The Profile tab's cached name if there is one, otherwise ask Spotify."""
+        if self.disk:
+            from .cache import decode_profile
+
+            hit = self.disk.load_decoded("profile", decode_profile)
+            if hit:
+                return hit[0].display_name
+        try:
+            return self.api.display_name()
+        except SpotifyAPIError:
+            return None
 
     def action_logout(self) -> None:
         from .auth import logout

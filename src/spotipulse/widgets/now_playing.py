@@ -87,6 +87,9 @@ class NowPlayingView(Vertical):
         self._queue: list[Track] = []
         self._queue_track: str | None = None
         self._queue_at = 0.0
+        # Last values shown, read by the compact (mini) view.
+        self.context_name: str | None = None
+        self.queue: list[Track] = []
 
     def compose(self) -> ComposeResult:
         with Horizontal(id="np-body"):
@@ -166,6 +169,8 @@ class NowPlayingView(Vertical):
     ) -> None:
         self._state = state
         self._state_at = time.monotonic()
+        self.context_name = context_name
+        self.queue = queue
         if cover is not None:
             self._cover_url = url
             self.query_one("#np-art", CoverArt).image = cover
@@ -193,14 +198,24 @@ class NowPlayingView(Vertical):
         self.query_one("#np-queue-list", Static).update(queue_text(queue))
         self._tick()
 
-    def _tick(self) -> None:
+    @property
+    def state(self) -> NowPlaying | None:
+        return self._state
+
+    def progress(self) -> tuple[int, int]:
+        """(position, duration) in ms, moved forward locally between polls."""
         state = self._state
         if state is None:
-            return
+            return 0, 0
         progress = state.progress_ms
         if state.is_playing:
             progress += int((time.monotonic() - self._state_at) * 1000)
         duration = max(state.track.duration_ms, 1)
-        progress = min(progress, duration)
+        return min(progress, duration), duration
+
+    def _tick(self) -> None:
+        if self._state is None:
+            return
+        progress, duration = self.progress()
         self.query_one("#np-progress", ProgressBar).update(total=duration, progress=progress)
         self.query_one("#np-time", Static).update(f"{format_clock(progress)} / {format_clock(duration)}")

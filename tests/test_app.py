@@ -35,6 +35,9 @@ class FakeAPI:
     def context_name(self, context_type, uri):
         return "Chill Vibes"
 
+    def display_name(self):
+        return "Noah"
+
     def profile(self):
         return Profile("Noah", "noah", None, None, 10, 2, 3, 1, (PlaylistInfo("Chill", 30, "Noah"),))
 
@@ -93,3 +96,57 @@ def test_tabs_switch_with_digits_and_azerty_top_row(tmp_path):
 
     asyncio.run(drive())
     assert seen == ["top", "genres", "history", "recent", "profile", "now", "profile", "now"]
+
+
+def test_compact_view_and_help_toggle():
+    app = SpotipulseApp(FakeAPI(), HistoryDB(":memory:"), Config("id", "secret"), splash=False)
+    screens = []
+
+    async def drive():
+        async with app.run_test(size=(60, 10)) as pilot:
+            await pilot.pause(0.5)
+            for key in ("c", "question_mark", "escape", "c", "c", "3"):
+                await pilot.press(key)
+                await pilot.pause(0.2)
+                screens.append(type(app.screen).__name__)
+            screens.append(app.query_one("#tabs").active)
+
+    asyncio.run(drive())
+    assert screens == ["MiniScreen", "HelpScreen", "MiniScreen", "Screen", "MiniScreen", "Screen", "genres"]
+
+
+def test_starts_in_compact_view_and_shows_the_track():
+    app = SpotipulseApp(FakeAPI(), HistoryDB(":memory:"), Config("id", "secret"), mini=True)
+    seen = {}
+
+    async def drive():
+        async with app.run_test(size=(70, 9)) as pilot:
+            await pilot.pause(0.8)
+            seen["screen"] = type(app.screen).__name__
+            seen["title"] = str(app.screen.query_one("#mini-title").render())
+
+    asyncio.run(drive())
+    assert seen["screen"] == "MiniScreen"
+    assert "Track 0" in seen["title"]
+
+
+def test_cached_top_shows_first_then_refreshes(tmp_path):
+    from spotipulse.cache import DiskCache, encode_top
+
+    disk = DiskCache(tmp_path)
+    stale = [make_track(99)]
+    disk.save("top_short_term", encode_top(stale, [], []))
+    api = FakeAPI()
+    app = SpotipulseApp(api, HistoryDB(":memory:"), Config("id", "secret"), splash=False, disk=disk)
+    seen = []
+
+    async def drive():
+        async with app.run_test(size=(140, 45)) as pilot:
+            seen.append(app.get_top("short_term").tracks[0].id)  # instant, from disk
+            await pilot.pause(1.0)
+            seen.append(app.get_top("short_term").tracks[0].id)  # refreshed in the background
+
+    asyncio.run(drive())
+    assert seen == ["track99", "track0"]
+    # and the fresh copy was written back for next launch
+    assert disk.load("top_short_term")[0]["tracks"][0]["id"] == "track0"

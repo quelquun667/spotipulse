@@ -12,9 +12,22 @@ from textual.widgets import DataTable, Input, Static, Tab, Tabs
 
 from ..api import TIME_RANGES, Artist, SpotifyAPIError, Track
 from ..stats import format_clock, format_duration, rank_changes, total_runtime_ms
-from . import CoverArt, LazyView, placeholder_cover
+from . import CoverArt, LazyView, fit_columns, placeholder_cover
 
 TOP_ARTISTS_SHOWN = 50
+TRACK_COLUMNS = [
+    ("rank", "#", 3, 0),
+    ("trend", "Trend", 5, 0),
+    ("title", "Title", 12, 3),
+    ("artist", "Artist", 10, 2),
+    ("length", "Length", 6, 0),
+]
+ARTIST_COLUMNS = [
+    ("rank", "#", 3, 0),
+    ("trend", "Trend", 5, 0),
+    ("artist", "Artist", 12, 2),
+    ("genres", "Genres", 10, 3),
+]
 # Each period's trend compares it with the next longer one; "1 Year" has nothing longer.
 REFERENCE_PERIOD = {"short_term": "medium_term", "medium_term": "long_term"}
 
@@ -76,17 +89,16 @@ class TopStatsView(LazyView):
                 yield Static("", id="top-art-caption")
 
     def on_mount(self) -> None:
-        tracks = self.query_one("#top-tracks", DataTable)
-        tracks.add_column("#", key="rank", width=3)
-        tracks.add_column("Trend", key="trend", width=5)
-        tracks.add_column("Title", key="title", width=28)
-        tracks.add_column("Artist", key="artist", width=20)
-        tracks.add_column("Length", key="length", width=6)
-        artists = self.query_one("#top-artists", DataTable)
-        artists.add_column("#", key="rank", width=3)
-        artists.add_column("Trend", key="trend", width=5)
-        artists.add_column("Artist", key="artist", width=20)
-        artists.add_column("Genres", key="genres", width=24)
+        self.call_after_refresh(self._fit_columns)
+
+    def on_resize(self) -> None:
+        self.call_after_refresh(self._fit_columns)
+
+    def _fit_columns(self) -> None:
+        changed = fit_columns(self.query_one("#top-tracks", DataTable), TRACK_COLUMNS)
+        changed = fit_columns(self.query_one("#top-artists", DataTable), ARTIST_COLUMNS) or changed
+        if changed:
+            self._render_tables()
 
     # ---------- period ----------
 
@@ -194,6 +206,9 @@ class TopStatsView(LazyView):
     def _render_tables(self) -> None:
         needle = self.query_one("#top-filter", Input).value.strip()
         tracks = self.query_one("#top-tracks", DataTable)
+        artists = self.query_one("#top-artists", DataTable)
+        if not tracks.columns or not artists.columns:
+            return  # columns get laid out once the tables have a size, then this runs again
         tracks.clear()
         for rank, track in enumerate(self._tracks, start=1):
             if needle and not track_matches(track, needle):
@@ -206,7 +221,6 @@ class TopStatsView(LazyView):
                 format_clock(track.duration_ms),
                 key=f"t{rank - 1}",
             )
-        artists = self.query_one("#top-artists", DataTable)
         artists.clear()
         for rank, artist in enumerate(self._artists, start=1):
             if needle and not artist_matches(artist, needle):

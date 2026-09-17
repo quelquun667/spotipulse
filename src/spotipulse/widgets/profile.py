@@ -10,14 +10,23 @@ from textual.markup import escape
 from textual.widgets import DataTable, Static
 
 from ..api import Profile, SpotifyAPIError
-from . import CoverArt, LazyView, placeholder_cover
+from ..cache import decode_profile, encode_profile
+from . import CoverArt, LazyView, fit_columns, placeholder_cover
 
 
 def count_label(value: int | None) -> str:
     return f"{value:,}".replace(",", " ") if value is not None else "—"
 
 
+PLAYLIST_COLUMNS = [("name", "Playlist", 12, 3), ("tracks", "Tracks", 6, 0), ("owner", "Owner", 8, 1)]
+
+
 class ProfileView(LazyView):
+    def __init__(self) -> None:
+        super().__init__()
+        self._profile: Profile | None = None
+        self._shown_cached = False
+
     def compose(self) -> ComposeResult:
         with Horizontal(id="profile-header"):
             yield CoverArt(placeholder_cover(), id="profile-avatar")
@@ -38,10 +47,14 @@ class ProfileView(LazyView):
                 yield DataTable(id="profile-playlists", cursor_type="row")
 
     def on_mount(self) -> None:
-        table = self.query_one("#profile-playlists", DataTable)
-        table.add_column("Playlist", key="name", width=34)
-        table.add_column("Tracks", key="tracks", width=6)
-        table.add_column("Owner", key="owner", width=20)
+        self.call_after_refresh(self._fit_columns)
+
+    def on_resize(self) -> None:
+        self.call_after_refresh(self._fit_columns)
+
+    def _fit_columns(self) -> None:
+        if fit_columns(self.query_one("#profile-playlists", DataTable), PLAYLIST_COLUMNS):
+            self._render_playlists()
 
     def load(self) -> None:
         self._fetch()
@@ -49,11 +62,23 @@ class ProfileView(LazyView):
     @work(thread=True, exclusive=True, group="profile")
     def _fetch(self) -> None:
         app = self.app
+        if app.disk and not self._shown_cached:
+            self._shown_cached = True
+            hit = app.disk.load_decoded("profile", decode_profile)
+            if hit:
+                self._show(hit[0])
         try:
             profile = app.api.profile()
         except SpotifyAPIError as exc:
             app.call_from_thread(self._failed, str(exc))
             return
+        if app.disk:
+            app.disk.save("profile", encode_profile(profile))
+        self._show(profile)
+
+    def _show(self, profile: Profile) -> None:
+        """Worker thread: gather the avatar and favorites, then update the UI."""
+        app = self.app
         avatar = app.api.image(profile.image_url) or placeholder_cover()
         favorites = []
         for time_range, label in (("short_term", "Last 4 weeks"), ("long_term", "Last year")):
@@ -100,7 +125,14 @@ class ProfileView(LazyView):
             text.append("Couldn't load your top items.", style="italic dim")
         self.query_one("#profile-favorites", Static).update(text)
 
+        self._profile = profile
+        self._render_playlists()
+
+    def _render_playlists(self) -> None:
         table = self.query_one("#profile-playlists", DataTable)
+        profile = self._profile
+        if profile is None or not table.columns:
+            return
         table.clear()
         for playlist in profile.playlists:
             table.add_row(

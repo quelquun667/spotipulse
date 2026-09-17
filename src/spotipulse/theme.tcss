@@ -331,3 +331,278 @@ SplashScreen {
     height: 6;
     margin-top: 1;
 }
+
+/* ---------- compact view ---------- */
+
+MiniScreen {
+    align: center middle;
+    background: $background;
+}
+
+#mini {
+    width: 100%;
+    max-width: 100;
+    height: auto;
+    border: round $panel;
+    background: $surface;
+    padding: 0 2;
+}
+
+#mini-title {
+    color: $text;
+}
+
+#mini-progress-row {
+    height: 1;
+    margin-top: 1;
+}
+
+#mini-elapsed, #mini-duration {
+    width: auto;
+    color: $text-muted;
+    padding: 0 1;
+}
+
+#mini-progress {
+    width: 1fr;
+}
+
+#mini-progress Bar {
+    width: 1fr;
+}
+
+#mini-progress Bar > .bar--bar,
+#mini-progress Bar > .bar--complete {
+    color: $primary;
+    background: $panel;
+}
+
+#mini-meta {
+    margin-top: 1;
+}
+
+#mini-keys {
+    margin-top: 1;
+    color: $text-muted;
+}
+
+MiniScreen.-short #mini {
+    border: none;
+    padding: 0 1;
+}
+
+MiniScreen.-short #mini-progress-row,
+MiniScreen.-short #mini-meta,
+MiniScreen.-short #mini-keys {
+    margin-top: 0;
+}
+
+/* ---------- help ---------- */
+
+HelpScreen {
+    align: center middle;
+    background: $background 70%;
+}
+
+#help {
+    width: 70;
+    max-width: 95%;
+    height: auto;
+    max-height: 90%;
+    border: round $primary;
+    border-title-color: $primary;
+    border-title-style: bold;
+    background: $surface;
+    padding: 1 3;
+}
+
+#help-keys {
+    width: 100%;
+    height: auto;
+}
+
+#help-hint {
+    margin-top: 1;
+}
+
+/* ---------- responsive: medium width (100-139 columns) ---------- */
+
+Screen.-medium #top-art-panel,
+Screen.-medium #recent-art-panel {
+    display: none;
+}
+
+Screen.-medium #np-art-box {
+    width: 30;
+    height: 15;
+}
+
+Screen.-medium #np-art {
+    width: 28;
+    height: 14;
+}
+
+Screen.-medium #profile-avatar {
+    width: 20;
+    height: 10;
+}
+
+/* ---------- responsive: narrow (under 100 columns) ---------- */
+
+Screen.-narrow TabPane {
+    padding: 0 1;
+}
+
+Screen.-narrow #top-art-panel,
+Screen.-narrow #recent-art-panel,
+Screen.-narrow #np-art-box,
+Screen.-narrow #profile-avatar {
+    display: none;
+}
+
+Screen.-narrow #np-body {
+    padding: 0 1;
+}
+
+Screen.-narrow #np-info {
+    padding-top: 0;
+}
+
+Screen.-narrow #top-body,
+Screen.-narrow #profile-body {
+    layout: vertical;
+}
+
+Screen.-narrow #top-tracks-panel,
+Screen.-narrow #top-artists-panel,
+Screen.-narrow #profile-favorites,
+Screen.-narrow #profile-playlists-panel {
+    width: 1fr;
+    height: 1fr;
+}
+
+Screen.-narrow #profile-favorites {
+    height: auto;
+}
+
+Screen.-narrow #profile-header {
+    height: auto;
+}
+
+Screen.-narrow #profile-identity {
+    padding-left: 0;
+    height: auto;
+}
+
+Screen.-narrow #profile-name {
+    margin-top: 0;
+}
+
+Screen.-narrow #profile-cards,
+Screen.-narrow #history-cards {
+    layout: grid;
+    grid-size: 2;
+    grid-rows: 5;
+    height: 10;
+}
+
+/* ---------- responsive: short (under 36 rows) ---------- */
+
+Screen.-short Header {
+    display: none;
+}
+
+Screen.-short TabPane {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+Screen.-short #np-queue,
+Screen.-short #history-note,
+Screen.-short #profile-link {
+    display: none;
+}
+
+Screen.-short #np-body {
+    padding: 0 2;
+}
+
+Screen.-short #np-art-box {
+    width: 24;
+    height: 12;
+}
+
+Screen.-short #np-art {
+    width: 22;
+    height: 11;
+}
+
+Screen.-short #np-info {
+    padding-top: 0;
+}
+
+Screen.-short #np-context {
+    margin-bottom: 1;
+}
+
+Screen.-short #np-playback {
+    margin-top: 1;
+}
+
+Screen.-short #top-summary {
+    margin: 0;
+}
+
+Screen.-short #top-filter {
+    margin-bottom: 0;
+}
+
+Screen.-short #history-cards {
+    margin-bottom: 0;
+}
+
+Screen.-short #history-compare {
+    height: 4;
+    margin-top: 0;
+}
+
+Screen.-short #profile-header {
+    height: auto;
+    margin-bottom: 0;
+}
+
+Screen.-short #profile-avatar {
+    display: none;
+}
+
+Screen.-short #profile-identity {
+    height: auto;
+    padding-left: 0;
+}
+
+Screen.-short #profile-name {
+    margin-top: 0;
+}
+
+/* Small screens: the Profile and History tabs scroll instead of cutting content off. */
+
+Screen.-narrow ProfileView,
+Screen.-short ProfileView,
+Screen.-narrow HistoryView,
+Screen.-short HistoryView {
+    overflow-y: auto;
+}
+
+Screen.-narrow #profile-body,
+Screen.-short #profile-body {
+    height: auto;
+}
+
+Screen.-narrow #profile-playlists-panel,
+Screen.-short #profile-playlists-panel {
+    height: 16;
+}
+
+Screen.-short #profile-favorites {
+    height: auto;
+}

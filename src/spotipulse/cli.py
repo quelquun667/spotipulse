@@ -61,6 +61,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     )
     parser.add_argument("--logout", action="store_true", help="forget the cached Spotify login")
     parser.add_argument("--no-splash", action="store_true", help="skip the startup logo")
+    parser.add_argument("--mini", action="store_true", help="start in the compact view (press c to toggle)")
     parser.add_argument("--version", action="version", version=f"spotipulse {__version__}")
     return parser.parse_args(argv)
 
@@ -125,12 +126,21 @@ def main(argv: list[str] | None = None) -> int:
     # Heavy imports only once we know we're launching the TUI.
     from .api import SpotifyAPI
     from .app import SpotipulseApp
-    from .config import db_path
+    from .cache import DiskCache
+    from .config import cache_dir, db_path
     from .db import HistoryDB
 
     db = HistoryDB(db_path())
+    disk = DiskCache(cache_dir())
     try:
-        app = SpotipulseApp(SpotifyAPI.from_oauth(make_oauth(config)), db, config, splash=not args.no_splash)
+        app = SpotipulseApp(
+            SpotifyAPI.from_oauth(make_oauth(config), disk=disk),
+            db,
+            config,
+            splash=not args.no_splash,
+            disk=disk,
+            mini=args.mini,
+        )
         app.run()
     finally:
         db.close()
