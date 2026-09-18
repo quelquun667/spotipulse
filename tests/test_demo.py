@@ -26,7 +26,7 @@ def test_demo_data_is_consistent():
     assert now.is_playing and 0 <= now.progress_ms <= now.track.duration_ms
     assert len(api.queue(5)) == 5 and api.context_name("playlist", "x") == "Late Night Drive"
     assert len(api.recently_played(50)) == 50
-    assert api.image("demo://cover/Soft Focus").size == (300, 300)
+    assert api.image("demo://cover/Soft Focus").size == (600, 600)
     assert api.image(None) is None
 
 

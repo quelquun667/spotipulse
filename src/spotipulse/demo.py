@@ -73,10 +73,10 @@ GENRES_ORDER = {"short_term": 0, "medium_term": 1, "long_term": 2}
 
 
 @lru_cache(maxsize=64)
-def cover(seed: int) -> Image.Image:
+def cover(seed: int, size: int = 600) -> Image.Image:
     """A generated album cover: a soft two-color gradient with a few shapes."""
     rng = random.Random(seed)
-    size = 300
+    k = size / 300
     hue = rng.random()
     first = tuple(int(c * 255) for c in colorsys.hsv_to_rgb(hue, 0.65, 0.9))
     second = tuple(int(c * 255) for c in colorsys.hsv_to_rgb((hue + 0.12) % 1, 0.75, 0.45))
@@ -86,14 +86,15 @@ def cover(seed: int) -> Image.Image:
     )
     draw = ImageDraw.Draw(image)
     for _ in range(3):
-        r = rng.randint(30, 110)
-        x, y = rng.randint(0, size), rng.randint(0, size)
+        r = rng.randint(30, 110) * k
+        x, y = rng.randint(0, 300) * k, rng.randint(0, 300) * k
         light = tuple(min(255, c + 60) for c in first)
+        box = (x - r, y - r, x + r, y + r)
         if rng.random() < 0.5:
-            draw.ellipse((x - r, y - r, x + r, y + r), outline=light, width=6)
+            draw.ellipse(box, outline=light, width=round(6 * k))
         else:
-            draw.rectangle((x - r, y - r, x + r, y + r), outline=light, width=6)
-    return image.filter(ImageFilter.GaussianBlur(0.6))
+            draw.rectangle(box, outline=light, width=round(6 * k))
+    return image.filter(ImageFilter.GaussianBlur(0.6 * k))
 
 
 def _track(index: int) -> Track:
