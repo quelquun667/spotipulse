@@ -31,4 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Responsive layout for narrow and short terminal windows
 - `covers` setting ("auto" by default, or "blocks" / "unicode" / "off") choosing how album art is drawn
 - On-disk cache of tops, profile, recently played and covers for an instant start
+- Recap cards in three formats (`recap_format`: feed 4:5, story 9:16, square 1:1), with your name and profile
+  picture; `Shift+E` picks the format for one export
+- Decorative equalizer next to "Now playing" (`animations`), and short fades when views appear
+- Light theme (`theme = "light"`, or `t` to switch)
+- `accent_from_cover`: tint the Now Playing tab with the current cover's color
+- Every setting is validated at startup, with a message naming the wrong line
 - Logo assets: SVG, PNG, block-art splash and GitHub social preview

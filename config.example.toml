@@ -1,7 +1,9 @@
 # spotipulse configuration
 #
-# The real file lives at ~/.config/spotipulse/config.toml and is created for you
-# on first run. This template only shows its shape — never put real credentials here.
+# The real file lives at ~/.config/spotipulse/config.toml and is created for you on first run.
+# This template shows every setting with its default value. Settings you leave out keep their default.
+# Text goes between quotes, numbers and true / false go without. Restart spotipulse after a change.
+# Full documentation: the "Settings" section of the README.
 
 [spotify]
 client_id = "your-client-id"
@@ -10,13 +12,30 @@ client_secret = "your-client-secret"
 redirect_uri = "http://127.0.0.1:8888/callback"
 
 [app]
-# Seconds between "now playing" refreshes.
-refresh_interval = 3
+# Colors of the dashboard: "dark" or "light". Press t in the app to switch for the current session.
+theme = "dark"
+
 # How album art is drawn:
 #   "auto"    the terminal's image protocol (Sixel / Kitty), real images (default)
 #   "blocks"  colored half-blocks: plain text, no leftovers or flicker, works everywhere
 #   "unicode" coarser text-only fallback
 #   "off"     no artwork at all
 covers = "auto"
-# Where exported recap cards are saved. Defaults to ~/Pictures (or your home folder).
+
+# true: tint the Now Playing tab (borders, labels, progress bar) with the current cover's main color.
+accent_from_cover = false
+
+# Equalizer bars next to "Now playing", and the short fades when views appear. false = a still screen.
+animations = true
+
+# Size of the recap card that e exports ("Shift+E" lets you pick another one each time):
+#   "feed"   1080x1350, Instagram / Discord post (default)
+#   "story"  1080x1920, Instagram / Snapchat story, phone wallpaper
+#   "square" 1080x1080, square post, thumbnail
+recap_format = "feed"
+
+# Where recap cards are saved. Defaults to ~/Pictures (or your home folder).
 # export_dir = "~/Pictures"
+
+# Seconds between "now playing" refreshes (1 or more).
+refresh_interval = 3

@@ -9,6 +9,7 @@
 <p align="center">
   <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-1DB954?logo=python&logoColor=white">
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-1DB954">
+  <a href="https://github.com/quelquun667/spotipulse/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/quelquun667/spotipulse/actions/workflows/ci.yml/badge.svg"></a>
 </p>
 
 ---
@@ -33,9 +34,12 @@ tools which only wrap the API can't show.
 - **Recently Played**: your last 50 tracks with timestamps and cover art
 - **Profile**: your name and avatar, liked songs, saved albums, playlists and followed artists counts,
   your favorite track/artist/genre of the last 4 weeks and last year, and your playlists
-- **Export recap**: press `e` to save a Wrapped-style PNG card (1080×1350) of the selected period: your
-  #1 track with its cover, top 5 tracks and artists with their artwork, top genres and listening time, on a
-  background tinted by your #1 cover
+- **Export recap**: press `e` to save a Wrapped-style PNG card of the selected period — your #1 track with
+  its cover, top tracks and artists with their artwork, top genres, listening time, your name and profile
+  picture, on a background tinted by your #1 cover. Three sizes: feed (4:5), story (9:16) and square;
+  `Shift+E` picks one
+- **Equalizer**: little bars bouncing next to "Now playing" while music plays
+- **Light theme** (`t`) and an optional **cover-colored** Now Playing tab
 - **Compact view**: press `c` (or start with `spotipulse --mini`) for just what's playing, readable in a tiny
   terminal window
 - **Adapts to your window**: panels, covers and table columns resize or step aside as the terminal gets
@@ -204,11 +208,13 @@ spotipulse --version     print the version
 | `r`               | refresh everything                                   |
 | `Ctrl+L`          | redraw the screen (clears terminal artifacts)        |
 | `e`               | export a PNG recap of the selected period            |
+| `E` (Shift + e)   | export, choosing the format (feed / story / square)  |
+| `t`               | switch between dark and light theme                  |
 | `L` (Shift + l)   | log out and quit                                     |
 | `q`               | quit                                                 |
 
-Recap cards are saved to `~/Pictures`, or to your home folder if that doesn't exist. Set `export_dir` in
-`config.toml` to change it (see [Settings](#settings)).
+Recap cards are saved to `~/Pictures`, or to your home folder if that doesn't exist (see
+[`export_dir`](#export_dir) and [`recap_format`](#recap_format)).
 
 ### Window size
 
@@ -218,26 +224,62 @@ and the "Up next" panel make room. For a very small window, use the compact view
 
 ## Settings
 
-All settings live in `~/.config/spotipulse/config.toml`, under `[app]`. Edit the file and restart
-spotipulse. [`config.example.toml`](config.example.toml) shows the whole file.
+### Where they live
 
-| Setting | Default | What it does |
-| ------- | ------- | ------------ |
-| `covers` | `"auto"` | how album art is drawn — see the table below |
-| `refresh_interval` | `3` | seconds between "now playing" refreshes (minimum 1) |
-| `export_dir` | `~/Pictures` | where `e` saves recap cards; falls back to your home folder |
+All settings are in one file: `~/.config/spotipulse/config.toml` — on Windows,
+`C:\Users\<you>\.config\spotipulse\config.toml`. spotipulse creates it the first time you log in.
+
+1. Open it in any text editor (Notepad, VS Code…).
+2. Change or add lines under the `[app]` section.
+3. Save, then restart spotipulse (`q`, then `spotipulse`).
+
+Settings you don't write down keep their default, so the file only needs the ones you want to change.
+A typo or an unknown value doesn't break anything silently: spotipulse refuses to start and tells you which
+line is wrong.
+
+> **TOML in 20 seconds:** text goes between quotes (`theme = "light"`), numbers and `true` / `false` go
+> without (`animations = false`). Lines starting with `#` are comments.
+
+### All settings at a glance
+
+| Setting | Default | Values | What it changes |
+| ------- | ------- | ------ | --------------- |
+| [`theme`](#theme) | `"dark"` | `"dark"`, `"light"` | colors of the whole dashboard |
+| [`covers`](#covers) | `"auto"` | `"auto"`, `"blocks"`, `"unicode"`, `"off"` | how album art is drawn |
+| [`accent_from_cover`](#accent_from_cover) | `false` | `true`, `false` | tint Now Playing with the cover's color |
+| [`animations`](#animations) | `true` | `true`, `false` | equalizer bars and fades |
+| [`recap_format`](#recap_format) | `"feed"` | `"feed"`, `"story"`, `"square"` | size of the card `e` exports |
+| [`export_dir`](#export_dir) | `~/Pictures` | any folder | where recap cards are saved |
+| [`refresh_interval`](#refresh_interval) | `3` | a number of seconds, 1 or more | how often Now Playing updates |
+
+A full example, with every setting at its default:
 
 ```toml
 [app]
+theme = "dark"
 covers = "auto"
-refresh_interval = 3
+accent_from_cover = false
+animations = true
+recap_format = "feed"
 export_dir = "~/Pictures"
+refresh_interval = 3
 ```
 
-The `[spotify]` section holds your `client_id`, `client_secret` and `redirect_uri`. spotipulse writes it for
-you on first run; you only touch it to change the redirect URI or to use another Spotify app.
+[`config.example.toml`](config.example.toml) has the same file with a comment on every line.
 
-### Album art: the `covers` setting
+### `theme`
+
+`"dark"` (default) or `"light"`. The light theme uses a darker green so text stays readable on white.
+
+You can also switch for the current session with **`t`**, without touching the file.
+
+```toml
+theme = "light"
+```
+
+### `covers`
+
+How album art, artist pictures and your avatar are drawn in the terminal.
 
 | Value | What you get | When to use it |
 | ----- | ------------ | -------------- |
@@ -247,15 +289,85 @@ you on first run; you only touch it to change the redirect URI or to use another
 | `"off"` | No artwork at all, just text. | Slow connections, or if you simply don't want images. |
 
 ```toml
-[app]
 covers = "blocks"
 ```
 
 > **If images misbehave:** some terminals (Windows Terminal among them) leave leftover pixels of a cover on
 > screen after switching tabs, and flicker while you select text with the mouse. That's the terminal's
-> graphics protocol, not spotipulse — switch to `"blocks"` and it goes away.
+> graphics protocol, not spotipulse. Press `Ctrl+L` to redraw; if it keeps happening, switch to `"blocks"`.
 
-Recap card exports always use the real cover images, whatever this setting is: it only affects the terminal.
+Recap cards always use the real cover images, whatever this setting is: it only affects the terminal.
+
+### `accent_from_cover`
+
+`false` (default) or `true`. When on, the Now Playing tab takes the main color of the current cover: the
+panel borders, the "Now playing" label, the artist name, the progress bar and the equalizer. It changes
+with every track, with a short fade. The rest of the app keeps its green.
+
+If a cover is mostly black, white or grey, there's no color to pick and the tab stays green.
+
+```toml
+accent_from_cover = true
+```
+
+### `animations`
+
+`true` (default) or `false`. Covers everything that moves:
+
+- the **equalizer** next to "Now playing" — small bars bouncing while music plays, still when paused.
+  They're decorative: Spotify doesn't share audio data any more, so they don't follow the beat;
+- the short **fade** when you switch tabs or open the help, the compact view or the export menu;
+- the **color fade** of `accent_from_cover`.
+
+Turn it off if you prefer a still screen, or if your terminal flickers.
+
+```toml
+animations = false
+```
+
+### `recap_format`
+
+The size of the card that **`e`** exports. **`Shift+E`** always lets you pick another one for a single
+export.
+
+| Value | Size | Made for | Layout |
+| ----- | ---- | -------- | ------ |
+| `"feed"` **(default)** | 1080×1350 (4:5) | Instagram / Discord post | #1 track, top 5 tracks and top 5 artists side by side, genres |
+| `"story"` | 1080×1920 (9:16) | Instagram / Snapchat story, phone wallpaper | bigger #1, tracks as a list, artists as a row of round pictures |
+| `"square"` | 1080×1080 (1:1) | square post, thumbnail | compact: top 4 tracks and artists, genres |
+
+Every card shows your Spotify name and profile picture next to the date (when you have one).
+
+```toml
+recap_format = "story"
+```
+
+### `export_dir`
+
+Where recap cards are saved. Defaults to your `Pictures` folder, or your home folder if there isn't one.
+`~` means your home folder.
+
+```toml
+export_dir = "~/Desktop"
+```
+
+Files are named `spotipulse-recap-<date>-<time>.png`, with `-story` or `-square` added for those formats.
+
+### `refresh_interval`
+
+Seconds between two checks of what's playing: `3` by default, `1` at least. The progress bar keeps moving
+smoothly in between either way. Raise it if you want spotipulse to make fewer requests to Spotify.
+
+```toml
+refresh_interval = 5
+```
+
+### The `[spotify]` section
+
+It holds your `client_id`, `client_secret` and `redirect_uri`. spotipulse writes it on first run; you only
+touch it to use another Spotify app or another redirect URI (see
+[Spotify Developer app setup](#spotify-developer-app-setup)). Keep this file private: it contains your app
+secret.
 
 ## Troubleshooting
 
@@ -275,7 +387,6 @@ Recap card exports always use the real cover images, whatever this setting is: i
 ## Roadmap
 
 - Terminal recording in this README
-- CI (ruff + pytest on GitHub Actions)
 - Optional PyPI release (`pipx install spotipulse`)
 
 > Spotify removed audio features (danceability, energy, tempo…) and recommendations for apps created after
