@@ -8,13 +8,16 @@ from datetime import UTC, datetime, timedelta
 from rich.text import Text
 from textual import work
 from textual.app import ComposeResult
+from textual.color import Color
 from textual.containers import Horizontal, Vertical
 from textual.markup import escape
-from textual.widgets import ProgressBar, Static
+from textual.widgets import Static
 
+from .. import palette
 from ..api import NowPlaying, SpotifyAPIError, Track
 from ..stats import format_clock
 from . import cover_art, placeholder_cover
+from .equalizer import Equalizer
 
 # Spotify counts a stream after 30 s; shorter tracks count at half their length.
 COUNT_AFTER_MS = 30_000
@@ -45,7 +48,7 @@ def playback_line(state: NowPlaying) -> Text:
         if text:
             text.append("    ")
         text.append(f"{label} ", style="dim")
-        text.append(value, style="bold #1ED760" if active else "")
+        text.append(value, style=f"bold {palette.bright()}" if active else "")
 
     if state.device_name:
         device = state.device_name
@@ -59,6 +62,13 @@ def playback_line(state: NowPlaying) -> Text:
     return text
 
 
+def progress_bar(position: int, duration: int, width: int, color: str) -> Text:
+    """A thin line: played part in the accent color, the rest dimmed."""
+    width = max(1, width)
+    done = round(width * position / max(duration, 1))
+    return Text.assemble(("━" * done, color), ("━" * (width - done), "dim"))
+
+
 def queue_text(queue: list[Track]) -> Text:
     text = Text()
     if not queue:
@@ -69,7 +79,7 @@ def queue_text(queue: list[Track]) -> Text:
             text.append("\n")
         text.append(f"{i}  ", style="dim")
         text.append(track.name, style="bold")
-        text.append(f"  {track.artist_line}", style="#1DB954")
+        text.append(f"  {track.artist_line}", style=palette.green())
         text.append(f"  {format_clock(track.duration_ms)}", style="dim")
     return text
 
@@ -90,18 +100,23 @@ class NowPlayingView(Vertical):
         # Last values shown, read by the compact (mini) view.
         self.context_name: str | None = None
         self.queue: list[Track] = []
+        # Cover-tinted accent (setting `accent_from_cover`); None means the theme's green.
+        self.accent: str | None = None
 
     def compose(self) -> ComposeResult:
         with Horizontal(id="np-body"):
             with Vertical(id="np-art-box"):
                 yield cover_art(placeholder_cover(), id="np-art")
             with Vertical(id="np-info"):
-                yield Static("CONNECTING…", id="np-status")
+                with Horizontal(id="np-status-row"):
+                    if self.app.config.animations:
+                        yield Equalizer(id="np-equalizer")
+                    yield Static("CONNECTING…", id="np-status")
                 yield Static("", id="np-title")
                 yield Static("", id="np-artist")
                 yield Static("", id="np-album")
                 yield Static("", id="np-context")
-                yield ProgressBar(total=100, show_eta=False, show_percentage=False, id="np-progress")
+                yield Static("", id="np-progress")
                 yield Static("", id="np-time")
                 yield Static("", id="np-playback")
         with Vertical(id="np-queue", classes="panel") as queue_panel:
@@ -127,9 +142,14 @@ class NowPlayingView(Vertical):
         self._log_history(state)
 
         cover = None
+        accent = self.accent
         url = state.track.image_url if state else None
         if url != self._cover_url:
-            cover = api.image(url) or placeholder_cover()
+            image = api.image(url)
+            cover = image or placeholder_cover()
+            if self.app.config.accent_from_cover:
+                brightness = 0.85 if self.app.current_theme.dark else 0.5
+                accent = palette.to_hex(palette.accent_color(image, brightness)) if image else None
 
         context_name = api.context_name(state.context_type, state.context_uri) if state else None
 
@@ -142,7 +162,7 @@ class NowPlayingView(Vertical):
             self._queue_track = track_id
             self._queue_at = time.monotonic()
 
-        self.app.call_from_thread(self._show, state, url, cover, context_name, list(self._queue))
+        self.app.call_from_thread(self._show, state, url, cover, context_name, list(self._queue), accent)
 
     def _log_history(self, state: NowPlaying | None) -> None:
         if not state or not state.is_playing or state.kind != "track":
@@ -166,6 +186,7 @@ class NowPlayingView(Vertical):
         cover,
         context_name: str | None,
         queue: list[Track],
+        accent: str | None = None,
     ) -> None:
         self._state = state
         self._state_at = time.monotonic()
@@ -174,6 +195,10 @@ class NowPlayingView(Vertical):
         if cover is not None:
             self._cover_url = url
             self.query_one("#np-art").image = cover
+        if accent != self.accent:
+            self.set_accent(accent)
+        for equalizer in self.query(Equalizer):
+            equalizer.set_playing(bool(state and state.is_playing))
         status = self.query_one("#np-status", Static)
         if state is None:
             status.update("NOTHING PLAYING")
@@ -181,7 +206,7 @@ class NowPlayingView(Vertical):
             self.query_one("#np-artist", Static).update("spotipulse will pick it up within a few seconds.")
             for widget_id in ("#np-album", "#np-context", "#np-time", "#np-playback"):
                 self.query_one(widget_id, Static).update("")
-            self.query_one("#np-progress", ProgressBar).update(total=100, progress=0)
+            self.query_one("#np-progress", Static).update("")
             self.query_one("#np-queue-list", Static).update(queue_text([]))
             return
         track = state.track
@@ -213,9 +238,33 @@ class NowPlayingView(Vertical):
         duration = max(state.track.duration_ms, 1)
         return min(progress, duration), duration
 
+    def set_accent(self, accent: str | None) -> None:
+        """Tint the tab with a cover color (None = back to the theme's colors), fading the text in."""
+        self.accent = accent
+        targets = ("#np-status", "#np-artist")
+        for selector in targets:
+            widget = self.query_one(selector)
+            if accent is None:
+                widget.styles.clear_rule("color")
+            else:
+                widget.styles.animate("color", Color.parse(accent), duration=0.4)
+        for selector in ("#np-body", "#np-queue"):
+            widget = self.query_one(selector)
+            if accent is None:
+                widget.styles.clear_rule("border")
+                widget.styles.clear_rule("border_title_color")
+            else:
+                widget.styles.border = ("round", accent)
+                widget.styles.border_title_color = accent
+        for equalizer in self.query(Equalizer):
+            equalizer.set_color(accent)
+        self._tick()
+
     def _tick(self) -> None:
         if self._state is None:
             return
         progress, duration = self.progress()
-        self.query_one("#np-progress", ProgressBar).update(total=duration, progress=progress)
+        bar = self.query_one("#np-progress", Static)
+        width = bar.content_region.width or 40
+        bar.update(progress_bar(progress, duration, width, self.accent or palette.green()))
         self.query_one("#np-time", Static).update(f"{format_clock(progress)} / {format_clock(duration)}")

@@ -9,6 +9,7 @@ from textual.containers import Horizontal, Vertical
 from textual.markup import escape
 from textual.widgets import DataTable, Static
 
+from .. import palette
 from ..api import Profile, SpotifyAPIError
 from ..cache import decode_profile, encode_profile
 from . import LazyView, cover_art, fit_columns, placeholder_cover
@@ -112,7 +113,7 @@ class ProfileView(LazyView):
         for label, top in favorites:
             if text:
                 text.append("\n\n")
-            text.append(label.upper(), style="bold #1ED760")
+            text.append(label.upper(), style=f"bold {palette.bright()}")
             rows = (
                 ("Top track", f"{top.tracks[0].name} — {top.tracks[0].artist_line}" if top.tracks else None),
                 ("Top artist", top.artists[0].name if top.artists else None),

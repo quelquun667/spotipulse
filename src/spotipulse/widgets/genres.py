@@ -8,6 +8,7 @@ from textual.app import ComposeResult
 from textual.markup import escape
 from textual.widgets import Static
 
+from .. import palette
 from ..api import TIME_RANGES, SpotifyAPIError
 from ..genres import GenreCount
 from . import LazyView
@@ -32,7 +33,7 @@ def render_chart(genres: list[GenreCount], width: int, artist_total: int) -> Tex
         full = int(exact)
         partial = " ▏▎▍▌▋▊▉"[int((exact - full) * 8)]
         bar = "█" * full + (partial if partial != " " else "")
-        style = "bold #1ED760" if i < 3 else "#1DB954"
+        style = f"bold {palette.bright()}" if i < 3 else palette.green()
         text.append(f"{label:<{LABEL_WIDTH}}", style="bold" if i < 3 else "")
         text.append(bar, style=style)
         share = genre.count / artist_total * 100 if artist_total else 0

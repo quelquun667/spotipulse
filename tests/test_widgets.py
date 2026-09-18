@@ -43,3 +43,28 @@ def test_cover_art_follows_the_configured_mode():
         assert type(cover_art()) is auto_widget
     finally:
         set_cover_mode("auto")
+
+
+def test_equalizer_steps_stay_in_range():
+    import random
+
+    from spotipulse.widgets.equalizer import LEVELS, TOP, next_levels, render_bars
+
+    rng = random.Random(1)
+    levels = [2] * 6
+    seen = set()
+    for _ in range(200):
+        levels = next_levels(levels, rng)
+        assert len(levels) == 6 and all(1 <= level <= TOP for level in levels)
+        seen.update(levels)
+    assert len(seen) > 4  # it actually moves
+    assert render_bars([1, TOP], None).plain == LEVELS[1] + LEVELS[TOP]
+
+
+def test_progress_bar_splits_played_and_remaining():
+    from spotipulse.widgets.now_playing import progress_bar
+
+    bar = progress_bar(30_000, 120_000, 20, "#FF0000")
+    assert bar.plain == "━" * 20
+    assert bar.spans[0].end == 5  # a quarter played
+    assert progress_bar(0, 0, 10, "#FF0000").plain == "━" * 10

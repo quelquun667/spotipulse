@@ -10,6 +10,7 @@ from textual.app import ComposeResult
 from textual.containers import Horizontal
 from textual.widgets import DataTable, Static
 
+from .. import palette
 from ..db import DayTotal
 from ..stats import (
     Comparison,
@@ -48,7 +49,7 @@ def render_daily_chart(series: list[DayTotal], width: int) -> Text:
         for i, level in enumerate(levels):
             filled = level - (row - 1) * 8
             char = "█" if filled >= 8 else EIGHTHS[max(0, int(filled))]
-            style = "bold #1ED760" if i == len(levels) - 1 else "#1DB954"
+            style = f"bold {palette.bright()}" if i == len(levels) - 1 else palette.green()
             text.append(char * bar, style=style)
             text.append(" " * (column - bar))
         text.append("\n")
@@ -130,7 +131,8 @@ class HistoryView(LazyView):
         ]
         for c in comparisons:
             change = format_change(c.change_pct)
-            style = "#1ED760" if (c.change_pct or 0) > 0 else "#E5534B" if (c.change_pct or 0) < 0 else "dim"
+            pct = c.change_pct or 0
+            style = palette.bright() if pct > 0 else palette.red() if pct < 0 else "dim"
             table.add_row(
                 c.label,
                 format_duration(c.current_ms),

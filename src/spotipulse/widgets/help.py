@@ -10,6 +10,8 @@ from textual.containers import VerticalScroll
 from textual.screen import ModalScreen
 from textual.widgets import Static
 
+from .. import palette
+
 SECTIONS: list[tuple[str, list[tuple[str, str]]]] = [
     (
         "Tabs",
@@ -38,6 +40,8 @@ SECTIONS: list[tuple[str, list[tuple[str, str]]]] = [
             ("c", "compact view (just what's playing)"),
             ("r", "refresh everything"),
             ("e", "export a PNG recap of the selected period"),
+            ("E", "export, choosing the format (feed / story / square)"),
+            ("t", "switch between dark and light theme"),
             ("Tab", "move focus between widgets"),
             ("? / ,", "show / hide this help"),
             ("Ctrl+L", "redraw the screen (if your terminal leaves artifacts)"),
@@ -50,7 +54,7 @@ SECTIONS: list[tuple[str, list[tuple[str, str]]]] = [
 
 def help_table() -> Table:
     table = Table.grid(padding=(0, 3))
-    table.add_column(justify="right", style="bold #1ED760", no_wrap=True)
+    table.add_column(justify="right", style=f"bold {palette.bright()}", no_wrap=True)
     table.add_column()
     for index, (section, keys) in enumerate(SECTIONS):
         if index:
@@ -72,7 +76,9 @@ class HelpScreen(ModalScreen):
             yield Static("[dim]Press ? or Esc to close[/dim]", id="help-hint")
 
     def on_mount(self) -> None:
-        self.query_one("#help").border_title = "Keyboard shortcuts"
+        panel = self.query_one("#help")
+        panel.border_title = "Keyboard shortcuts"
+        self.app.fade_in(panel)
 
     def on_click(self) -> None:
         self.dismiss()

@@ -16,7 +16,7 @@ from textual.screen import Screen
 from textual.theme import Theme
 from textual.widgets import Footer, Header, Static, TabbedContent, TabPane
 
-from . import asset_path
+from . import asset_path, palette
 from .api import PERIOD_DAYS, TIME_RANGES, Artist, SpotifyAPI, SpotifyAPIError, Track
 from .cache import DiskCache, decode_top, encode_top
 from .config import Config
@@ -24,6 +24,7 @@ from .db import HistoryDB
 from .genres import GenreCount, fill_missing_genres, top_genres
 from .stats import format_duration, listened_ms
 from .widgets import set_cover_mode
+from .widgets.export_menu import ExportScreen
 from .widgets.genres import GenresView
 from .widgets.help import HelpScreen
 from .widgets.history import HistoryView
@@ -47,6 +48,22 @@ SPOTIPULSE_THEME = Theme(
     error="#E5534B",
     dark=True,
 )
+
+SPOTIPULSE_LIGHT_THEME = Theme(
+    name="spotipulse-light",
+    primary="#138A43",
+    secondary="#1DB954",
+    accent="#138A43",
+    foreground="#1A1A1A",
+    background="#F4F4F4",
+    surface="#FFFFFF",
+    panel="#D9D9D9",
+    success="#138A43",
+    warning="#B7791F",
+    error="#C62828",
+    dark=False,
+)
+THEME_NAMES = {"dark": "spotipulse", "light": "spotipulse-light"}
 
 
 @dataclass(frozen=True)
@@ -108,6 +125,8 @@ class SpotipulseApp(App):
         Binding("question_mark,comma,f1", "toggle_help", "Help", key_display="?"),
         Binding("r", "refresh", "Refresh"),
         Binding("e", "export", "Export"),
+        Binding("E", "choose_export", "Export as…", show=False),
+        Binding("t", "toggle_theme", "Theme", show=False),
         Binding("L", "logout", "Log out", show=False),
         Binding("q", "quit", "Quit"),
     ]
@@ -133,6 +152,9 @@ class SpotipulseApp(App):
         self.logged_out = False
         # Before compose(): the cover widgets are built there, so the mode has to be set first.
         set_cover_mode(config.covers)
+        palette.set_dark(config.theme == "dark")
+        if not config.animations:
+            self.animation_level = "none"
         self._top_cache: dict[str, TopData] = {}
         self._top_lock = threading.Lock()
         # Periods already fetched live this session: the disk cache is only a startup shortcut.
@@ -157,7 +179,8 @@ class SpotipulseApp(App):
 
     def on_mount(self) -> None:
         self.register_theme(SPOTIPULSE_THEME)
-        self.theme = "spotipulse"
+        self.register_theme(SPOTIPULSE_LIGHT_THEME)
+        self.theme = THEME_NAMES[self.config.theme]
         if self.start_mini:
             self.push_screen(MiniScreen())
         elif self.splash:
@@ -293,7 +316,35 @@ class SpotipulseApp(App):
             view.period_changed(time_range)
 
     def on_tabbed_content_tab_activated(self, event: TabbedContent.TabActivated) -> None:
+        self.fade_in(event.pane)
         self._activate(event.pane.id)
+
+    def fade_in(self, widget, duration: float = 0.15) -> None:
+        """Quick fade of a view's text when it appears (skipped when `animations = false`).
+
+        Fades `text_opacity` rather than `opacity`: animating a whole panel's opacity leaves Textual
+        painting the screen background behind its text afterwards.
+        """
+        if not self.config.animations:
+            return
+        widget.styles.text_opacity = 0.0
+        widget.styles.animate(
+            "text_opacity",
+            1.0,
+            duration=duration,
+            on_complete=lambda: widget.styles.clear_rule("text_opacity"),
+        )
+
+    def action_toggle_theme(self) -> None:
+        dark = not self.current_theme.dark
+        self.theme = THEME_NAMES["dark" if dark else "light"]
+        palette.set_dark(dark)
+        # Text built in Python (tables, charts) holds its colors: rebuild the views.
+        self.query_one(NowPlayingView).poll()
+        for view_type in (TopStatsView, GenresView, HistoryView, RecentView, ProfileView):
+            self.query_one(view_type).stale = True
+        self._activate(self._main_tabs().active)
+        self.notify(f"{'Dark' if dark else 'Light'} theme", timeout=1.5)
 
     def _activate(self, pane_id: str | None) -> None:
         views = {
@@ -316,10 +367,20 @@ class SpotipulseApp(App):
         self._activate(self._main_tabs().active)
         self.notify("Refreshing…", timeout=1.5)
 
+    def action_choose_export(self) -> None:
+        def chosen(fmt: str | None) -> None:
+            if fmt:
+                self.action_export(fmt)
+
+        self.push_screen(ExportScreen(default=self.config.recap_format), chosen)
+
     @work(thread=True, exclusive=True, group="export")
-    def action_export(self) -> None:
+    def action_export(self, fmt: str | None = None) -> None:
         time_range = self.period
-        self.call_from_thread(self.notify, f"Building your {TIME_RANGES[time_range]} recap…", timeout=2)
+        fmt = fmt or self.config.recap_format
+        self.call_from_thread(
+            self.notify, f"Building your {TIME_RANGES[time_range]} recap ({fmt})…", timeout=2
+        )
         try:
             data = self.get_top(time_range)
         except SpotifyAPIError as exc:
@@ -328,6 +389,7 @@ class SpotipulseApp(App):
         from .export import render_recap
 
         label, _ = self.listening_summary(time_range)
+        user_name, avatar_url = self._profile_brief()
         try:
             path = render_recap(
                 data.tracks,
@@ -338,25 +400,27 @@ class SpotipulseApp(App):
                 self.config.resolved_export_dir(),
                 now=datetime.now(),
                 images=self.api.image,
-                user_name=self._display_name(),
+                user_name=user_name,
+                avatar_url=avatar_url,
+                fmt=fmt,
             )
         except OSError as exc:
             self.call_from_thread(self.notify, f"Couldn't save the recap: {exc}", severity="error")
             return
         self.call_from_thread(self.notify, f"Recap saved to {path}", title="Exported", timeout=8)
 
-    def _display_name(self) -> str | None:
-        """Blocking. The Profile tab's cached name if there is one, otherwise ask Spotify."""
+    def _profile_brief(self) -> tuple[str | None, str | None]:
+        """Blocking. (name, avatar URL): the Profile tab's cached copy if there is one, else ask Spotify."""
         if self.disk:
             from .cache import decode_profile
 
             hit = self.disk.load_decoded("profile", decode_profile)
             if hit:
-                return hit[0].display_name
+                return hit[0].display_name, hit[0].image_url
         try:
-            return self.api.display_name()
+            return self.api.me_brief()
         except SpotifyAPIError:
-            return None
+            return None, None
 
     def action_logout(self) -> None:
         from .auth import logout

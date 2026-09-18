@@ -35,8 +35,8 @@ class FakeAPI:
     def context_name(self, context_type, uri):
         return "Chill Vibes"
 
-    def display_name(self):
-        return "Noah"
+    def me_brief(self):
+        return "Noah", None
 
     def profile(self):
         return Profile("Noah", "noah", None, None, 10, 2, 3, 1, (PlaylistInfo("Chill", 30, "Noah"),))
@@ -150,3 +150,119 @@ def test_cached_top_shows_first_then_refreshes(tmp_path):
     assert seen == ["track99", "track0"]
     # and the fresh copy was written back for next launch
     assert disk.load("top_short_term")[0]["tracks"][0]["id"] == "track0"
+
+
+def _run(app, keys, size=(140, 45), pause=0.3):
+    screens = []
+
+    async def drive():
+        async with app.run_test(size=size) as pilot:
+            await pilot.pause(0.5)
+            for key in keys:
+                await pilot.press(key)
+                await pilot.pause(pause)
+                screens.append(type(app.screen).__name__)
+
+    asyncio.run(drive())
+    return screens
+
+
+def test_shift_e_picks_a_format_and_exports_it(tmp_path):
+    app = SpotipulseApp(
+        FakeAPI(), HistoryDB(":memory:"), Config("id", "secret", export_dir=tmp_path), splash=False
+    )
+    screens = _run(app, ["E", "2"], pause=1.5)
+    assert screens[0] == "ExportScreen"
+    assert [p.name.endswith("-story.png") for p in tmp_path.glob("*.png")] == [True]
+
+
+def test_escape_cancels_the_format_menu(tmp_path):
+    app = SpotipulseApp(
+        FakeAPI(), HistoryDB(":memory:"), Config("id", "secret", export_dir=tmp_path), splash=False
+    )
+    screens = _run(app, ["E", "escape"])
+    assert screens == ["ExportScreen", "Screen"]
+    assert not list(tmp_path.glob("*.png"))
+
+
+def test_default_format_comes_from_the_config(tmp_path):
+    config = Config("id", "secret", export_dir=tmp_path, recap_format="square")
+    app = SpotipulseApp(FakeAPI(), HistoryDB(":memory:"), config, splash=False)
+    _run(app, ["e"], pause=1.5)
+    assert [p.name.endswith("-square.png") for p in tmp_path.glob("*.png")] == [True]
+
+
+def test_t_toggles_the_light_theme():
+    app = SpotipulseApp(FakeAPI(), HistoryDB(":memory:"), Config("id", "secret"), splash=False)
+    themes = []
+
+    async def drive():
+        async with app.run_test(size=(140, 45)) as pilot:
+            await pilot.pause(0.3)
+            themes.append(app.theme)
+            await pilot.press("t")
+            await pilot.pause(0.3)
+            themes.append(app.theme)
+            await pilot.press("t")
+            await pilot.pause(0.3)
+            themes.append(app.theme)
+
+    asyncio.run(drive())
+    assert themes == ["spotipulse", "spotipulse-light", "spotipulse"]
+
+
+def test_light_theme_from_config():
+    app = SpotipulseApp(FakeAPI(), HistoryDB(":memory:"), Config("id", "secret", theme="light"), splash=False)
+    seen = {}
+
+    async def drive():
+        async with app.run_test(size=(140, 45)) as pilot:
+            await pilot.pause(0.3)
+            seen["theme"] = app.theme
+
+    asyncio.run(drive())
+    assert seen["theme"] == "spotipulse-light"
+
+
+def test_equalizer_follows_the_animations_setting():
+    from spotipulse.widgets.equalizer import Equalizer
+
+    counts = {}
+    for animations in (True, False):
+        app = SpotipulseApp(
+            FakeAPI(), HistoryDB(":memory:"), Config("id", "secret", animations=animations), splash=False
+        )
+
+        async def drive(app=app, animations=animations):
+            async with app.run_test(size=(140, 45)) as pilot:
+                await pilot.pause(0.5)
+                counts[animations] = len(app.query(Equalizer))
+
+        asyncio.run(drive())
+    assert counts == {True: 1, False: 0}
+
+
+def test_accent_from_cover_tints_now_playing():
+    from PIL import Image
+
+    class ColorfulAPI(FakeAPI):
+        def image(self, url):
+            return Image.new("RGB", (32, 32), (200, 30, 30))
+
+    tracks = FakeAPI().tracks
+    api = ColorfulAPI()
+    api.tracks = [t.__class__(**{**t.__dict__, "image_url": "cover"}) for t in tracks]
+    config = Config("id", "secret", accent_from_cover=True)
+    app = SpotipulseApp(api, HistoryDB(":memory:"), config, splash=False)
+    seen = {}
+
+    async def drive():
+        async with app.run_test(size=(140, 45)) as pilot:
+            await pilot.pause(1.0)
+            seen["accent"] = app.query_one(NowPlayingView).accent
+
+    from spotipulse.widgets.now_playing import NowPlayingView
+
+    asyncio.run(drive())
+    red, green, blue = (int(seen["accent"][i : i + 2], 16) for i in (1, 3, 5))
+    assert red > green and red > blue

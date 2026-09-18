@@ -10,6 +10,7 @@ from textual.containers import Horizontal, Vertical
 from textual.markup import escape
 from textual.widgets import DataTable, Input, Static, Tab, Tabs
 
+from .. import palette
 from ..api import TIME_RANGES, Artist, SpotifyAPIError, Track
 from ..stats import format_clock, format_duration, rank_changes, total_runtime_ms
 from . import LazyView, cover_art, fit_columns, placeholder_cover
@@ -36,11 +37,11 @@ def trend_cell(change: int | None, has_reference: bool) -> Text:
     if not has_reference:
         return Text("")
     if change is None:
-        return Text("NEW", style="bold #1ED760")
+        return Text("NEW", style=f"bold {palette.bright()}")
     if change > 0:
-        return Text(f"▲ {change}", style="#1ED760")
+        return Text(f"▲ {change}", style=palette.bright())
     if change < 0:
-        return Text(f"▼ {-change}", style="#E5534B")
+        return Text(f"▼ {-change}", style=palette.red())
     return Text("=", style="dim")
 
 

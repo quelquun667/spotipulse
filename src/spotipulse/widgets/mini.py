@@ -9,6 +9,7 @@ from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import ProgressBar, Static
 
+from .. import palette
 from ..stats import format_clock
 from .now_playing import REPEAT_LABELS, NowPlayingView
 
@@ -31,6 +32,7 @@ class MiniScreen(Screen):
             yield Static("[dim]c[/] full view   [dim]?[/] help   [dim]q[/] quit", id="mini-keys")
 
     def on_mount(self) -> None:
+        self.app.fade_in(self.query_one("#mini"))
         self._update_view()
         self.set_interval(0.5, self._update_view)
 
@@ -48,11 +50,11 @@ class MiniScreen(Screen):
 
         track = state.track
         heading = Text()
-        heading.append("▶ " if state.is_playing else "⏸ ", style="bold #1ED760")
+        heading.append("▶ " if state.is_playing else "⏸ ", style=f"bold {palette.bright()}")
         heading.append(track.name, style="bold")
         title.update(heading)
 
-        artist = Text(track.artist_line, style="#1DB954")
+        artist = Text(track.artist_line, style=palette.green())
         if track.album:
             artist.append(f"  ·  {track.album}", style="dim")
         if track.year:
@@ -77,9 +79,11 @@ class MiniScreen(Screen):
             meta.append(label, style="dim")
             meta.append(value)
         if state.shuffle:
-            meta.append("  ·  shuffle", style="#1ED760")
+            meta.append("  ·  shuffle", style=palette.bright())
         if state.repeat != "off":
-            meta.append(f"  ·  repeat {REPEAT_LABELS.get(state.repeat, state.repeat)}", style="#1ED760")
+            meta.append(
+                f"  ·  repeat {REPEAT_LABELS.get(state.repeat, state.repeat)}", style=palette.bright()
+            )
         self.query_one("#mini-meta", Static).update(meta)
 
         next_line = Text()
