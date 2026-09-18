@@ -66,3 +66,35 @@ def test_covers_defaults_to_blocks_and_rejects_nonsense(isolated_home):
     )
     with pytest.raises(ConfigError):
         load_config(isolated_home / "bad.toml")
+
+
+def test_new_settings_defaults_and_values(isolated_home):
+    save_config("id", "secret")
+    config = load_config()
+    assert (config.recap_format, config.animations, config.accent_from_cover, config.theme) == (
+        "feed",
+        True,
+        False,
+        "dark",
+    )
+    isolated_home.joinpath("custom.toml").write_text(
+        '[spotify]\nclient_id = "a"\nclient_secret = "b"\n'
+        '[app]\nrecap_format = "Story"\nanimations = false\naccent_from_cover = true\ntheme = "light"\n',
+        encoding="utf-8",
+    )
+    config = load_config(isolated_home / "custom.toml")
+    assert (config.recap_format, config.animations, config.accent_from_cover, config.theme) == (
+        "story",
+        False,
+        True,
+        "light",
+    )
+
+
+def test_quoted_booleans_are_rejected_with_a_clear_message(isolated_home):
+    isolated_home.mkdir(parents=True, exist_ok=True)
+    isolated_home.joinpath("bad.toml").write_text(
+        '[spotify]\nclient_id = "a"\nclient_secret = "b"\n[app]\nanimations = "false"\n', encoding="utf-8"
+    )
+    with pytest.raises(ConfigError, match="without quotes"):
+        load_config(isolated_home / "bad.toml")

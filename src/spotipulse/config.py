@@ -13,6 +13,10 @@ DEFAULT_REFRESH_INTERVAL = 3.0
 # it badly (leftovers on screen, flicker while selecting text) -- "blocks" is the safe fallback.
 DEFAULT_COVERS = "auto"
 COVER_MODES = ("blocks", "auto", "unicode", "off")
+# Recap card sizes: feed 1080x1350 (4:5), story 1080x1920 (9:16), square 1080x1080.
+DEFAULT_RECAP_FORMAT = "feed"
+RECAP_FORMATS = ("feed", "story", "square")
+THEMES = ("dark", "light")
 
 
 def config_dir() -> Path:
@@ -53,6 +57,12 @@ class Config:
     refresh_interval: float = DEFAULT_REFRESH_INTERVAL
     export_dir: Path | None = None
     covers: str = DEFAULT_COVERS
+    recap_format: str = DEFAULT_RECAP_FORMAT
+    # Equalizer bars next to "Now playing" and the short fade when switching views.
+    animations: bool = True
+    # Tint the Now Playing tab with the current cover's main color.
+    accent_from_cover: bool = False
+    theme: str = "dark"
 
     def resolved_export_dir(self) -> Path:
         if self.export_dir:
@@ -83,9 +93,11 @@ def load_config(path: Path | None = None) -> Config | None:
     except (TypeError, ValueError) as exc:
         raise ConfigError(f"{path}: app.refresh_interval must be a number") from exc
 
-    covers = str(app.get("covers", DEFAULT_COVERS)).strip().lower()
-    if covers not in COVER_MODES:
-        raise ConfigError(f"{path}: app.covers must be one of {', '.join(COVER_MODES)}")
+    covers = _choice(app, "covers", DEFAULT_COVERS, COVER_MODES, path)
+    recap_format = _choice(app, "recap_format", DEFAULT_RECAP_FORMAT, RECAP_FORMATS, path)
+    theme = _choice(app, "theme", "dark", THEMES, path)
+    animations = _flag(app, "animations", True, path)
+    accent_from_cover = _flag(app, "accent_from_cover", False, path)
 
     export_dir = app.get("export_dir")
     return Config(
@@ -95,7 +107,25 @@ def load_config(path: Path | None = None) -> Config | None:
         refresh_interval=max(1.0, refresh),
         export_dir=Path(export_dir).expanduser() if export_dir else None,
         covers=covers,
+        recap_format=recap_format,
+        animations=animations,
+        accent_from_cover=accent_from_cover,
+        theme=theme,
     )
+
+
+def _choice(section: dict, key: str, default: str, allowed: tuple[str, ...], path: Path) -> str:
+    value = str(section.get(key, default)).strip().lower()
+    if value not in allowed:
+        raise ConfigError(f"{path}: app.{key} must be one of {', '.join(allowed)} (got {value!r})")
+    return value
+
+
+def _flag(section: dict, key: str, default: bool, path: Path) -> bool:
+    value = section.get(key, default)
+    if not isinstance(value, bool):
+        raise ConfigError(f"{path}: app.{key} must be true or false, without quotes (got {value!r})")
+    return value
 
 
 def _toml_string(value: str) -> str:
