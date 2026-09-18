@@ -125,8 +125,32 @@ class NowPlayingView(Vertical):
 
     def on_mount(self) -> None:
         self.poll()
-        self.set_interval(self.app.config.refresh_interval, self.poll)
+        self._poll_timer = self.set_interval(self.app.config.refresh_interval, self.poll)
         self.set_interval(0.5, self._tick)
+
+    # ---------- live settings (Settings screen) ----------
+
+    def set_refresh_interval(self, seconds: float) -> None:
+        self._poll_timer.stop()
+        self._poll_timer = self.set_interval(seconds, self.poll)
+
+    def set_equalizer(self, enabled: bool) -> None:
+        existing = list(self.query(Equalizer))
+        if enabled and not existing:
+            equalizer = Equalizer(id="np-equalizer")
+            self.query_one("#np-status-row").mount(equalizer, before=self.query_one("#np-status"))
+            equalizer.set_color(self.accent)
+            equalizer.call_after_refresh(equalizer.set_playing, bool(self._state and self._state.is_playing))
+        elif not enabled:
+            for equalizer in existing:
+                equalizer.remove()
+
+    def refresh_accent(self) -> None:
+        """Recompute (or drop) the cover color after `accent_from_cover` changed."""
+        self._cover_url = "unset"  # the next poll re-reads the cover and its color
+        if not self.app.config.accent_from_cover:
+            self.set_accent(None)
+        self.poll()
 
     @work(thread=True, exclusive=True, group="now-playing")
     def poll(self) -> None:

@@ -54,20 +54,51 @@ def _ask_credentials():
     return config
 
 
+CONFIG_HELP = """\
+settings:
+  spotipulse config               list every setting with its value
+  spotipulse config set KEY VALUE change one        (e.g. spotipulse config set theme light)
+  spotipulse config get KEY       print one value
+  spotipulse config reset KEY     back to the default
+  spotipulse config edit          open the file in your editor (same as --config)
+  spotipulse config path          print where the file is
+"""
+
+
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="spotipulse",
         description="A terminal dashboard for your Spotify stats.",
+        epilog=CONFIG_HELP,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--logout", action="store_true", help="forget the cached Spotify login")
     parser.add_argument("--no-splash", action="store_true", help="skip the startup logo")
     parser.add_argument("--mini", action="store_true", help="start in the compact view (press c to toggle)")
+    parser.add_argument("--config", action="store_true", help="open the settings file in your editor")
     parser.add_argument("--version", action="version", version=f"spotipulse {__version__}")
+    commands = parser.add_subparsers(dest="command", title="commands", metavar="COMMAND")
+    config = commands.add_parser(
+        "config",
+        help="list or change settings (see below)",
+        description="Read and change spotipulse settings.",
+        epilog=CONFIG_HELP,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    config.add_argument("action", nargs="?", choices=("list", "get", "set", "reset", "edit", "path"))
+    config.add_argument("key", nargs="?", help="setting name, e.g. theme")
+    config.add_argument("value", nargs="?", help="new value, for set")
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
+
+    if args.config or args.command == "config":
+        from . import config_cli
+
+        action = "edit" if args.config else args.action
+        return config_cli.run(action, getattr(args, "key", None), getattr(args, "value", None))
 
     from .auth import TokenStatus, check_token, login, logout, make_oauth
 
@@ -79,7 +110,7 @@ def main(argv: list[str] | None = None) -> int:
         config = load_config()
     except ConfigError as exc:
         _say(f"Config problem: {exc}")
-        _say(f"Fix or delete {config_path()} and run spotipulse again.")
+        _say("Fix it with `spotipulse --config`, or reset a setting with `spotipulse config reset <name>`.")
         return 1
 
     status = check_token(make_oauth(config)) if config else TokenStatus.MISSING

@@ -5,6 +5,18 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Settings screen in the app (`s`): browse every setting, change it with the arrow keys, saved to
+  `config.toml` immediately and applied live
+- `spotipulse config` (`list`, `get`, `set`, `reset`, `path`, `edit`) to manage settings from the command line,
+  with the same validation
+- `spotipulse --config` opens the settings file in your editor, creating it with every setting documented
+- New config files list every setting, commented out, with a description; saving your Spotify credentials
+  no longer overwrites the settings already in the file
+
 ## [0.1.0] - 2026-09-18
 
 ### Added
@@ -39,4 +51,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Every setting is validated at startup, with a message naming the wrong line
 - Logo assets: SVG, PNG, block-art splash and GitHub social preview
 
+[Unreleased]: https://github.com/quelquun667/spotipulse/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/quelquun667/spotipulse/releases/tag/v0.1.0

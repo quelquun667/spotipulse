@@ -38,6 +38,7 @@ SECTIONS: list[tuple[str, list[tuple[str, str]]]] = [
         "General",
         [
             ("c", "compact view (just what's playing)"),
+            ("s", "settings (saved to config.toml)"),
             ("r", "refresh everything"),
             ("e", "export a PNG recap of the selected period"),
             ("E", "export, choosing the format (feed / story / square)"),

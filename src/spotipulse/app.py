@@ -19,7 +19,7 @@ from textual.widgets import Footer, Header, Static, TabbedContent, TabPane
 from . import asset_path, palette
 from .api import PERIOD_DAYS, TIME_RANGES, Artist, SpotifyAPI, SpotifyAPIError, Track
 from .cache import DiskCache, decode_top, encode_top
-from .config import Config
+from .config import Config, get_setting, with_setting
 from .db import HistoryDB
 from .genres import GenreCount, fill_missing_genres, top_genres
 from .stats import format_duration, listened_ms
@@ -32,6 +32,7 @@ from .widgets.mini import MiniScreen
 from .widgets.now_playing import NowPlayingView
 from .widgets.profile import ProfileView
 from .widgets.recent import RecentView
+from .widgets.settings import PathInputScreen, SettingsScreen
 from .widgets.top_stats import TopStatsView
 
 SPOTIPULSE_THEME = Theme(
@@ -127,6 +128,7 @@ class SpotipulseApp(App):
         Binding("e", "export", "Export"),
         Binding("E", "choose_export", "Export as…", show=False),
         Binding("t", "toggle_theme", "Theme", show=False),
+        Binding("s", "settings", "Settings"),
         Binding("L", "logout", "Log out", show=False),
         Binding("q", "quit", "Quit"),
     ]
@@ -263,7 +265,8 @@ class SpotipulseApp(App):
     def _close_overlays(self) -> None:
         """Back to the dashboard from the compact view or the help overlay."""
         closed = False
-        while len(self.screen_stack) > 1 and isinstance(self.screen, (MiniScreen, HelpScreen, SplashScreen)):
+        overlays = (MiniScreen, HelpScreen, SplashScreen, SettingsScreen, PathInputScreen, ExportScreen)
+        while len(self.screen_stack) > 1 and isinstance(self.screen, overlays):
             self.pop_screen()
             closed = True
         if closed:
@@ -336,7 +339,12 @@ class SpotipulseApp(App):
         )
 
     def action_toggle_theme(self) -> None:
+        """For this session only; the `theme` setting (s) is what's saved."""
         dark = not self.current_theme.dark
+        self._set_dark(dark)
+        self.notify(f"{'Dark' if dark else 'Light'} theme", timeout=1.5)
+
+    def _set_dark(self, dark: bool) -> None:
         self.theme = THEME_NAMES["dark" if dark else "light"]
         palette.set_dark(dark)
         # Text built in Python (tables, charts) holds its colors: rebuild the views.
@@ -344,7 +352,30 @@ class SpotipulseApp(App):
         for view_type in (TopStatsView, GenresView, HistoryView, RecentView, ProfileView):
             self.query_one(view_type).stale = True
         self._activate(self._main_tabs().active)
-        self.notify(f"{'Dark' if dark else 'Light'} theme", timeout=1.5)
+
+    def action_settings(self) -> None:
+        if isinstance(self.screen, SettingsScreen):
+            self.pop_screen()
+            self.action_redraw()
+            return
+        self._close_overlays()
+        self.push_screen(SettingsScreen(), lambda _: self.action_redraw())
+
+    def apply_setting(self, key: str, file_value: object) -> bool:
+        """Use a setting changed from the Settings screen. Returns False when it needs a restart."""
+        self.config = with_setting(self.config, key, file_value)
+        now_playing = self.query_one(NowPlayingView)
+        if key == "theme":
+            self._set_dark(self.config.theme == "dark")
+        elif key == "animations":
+            self.animation_level = "full" if self.config.animations else "none"
+            now_playing.set_equalizer(self.config.animations)
+        elif key == "accent_from_cover":
+            now_playing.refresh_accent()
+        elif key == "refresh_interval":
+            now_playing.set_refresh_interval(self.config.refresh_interval)
+        # recap_format and export_dir are read at export time; covers needs new widgets (restart)
+        return get_setting(key).live
 
     def _activate(self, pane_id: str | None) -> None:
         views = {

@@ -2,7 +2,8 @@
 #
 # The real file lives at ~/.config/spotipulse/config.toml and is created for you on first run.
 # This template shows every setting with its default value. Settings you leave out keep their default.
-# Text goes between quotes, numbers and true / false go without. Restart spotipulse after a change.
+# Text goes between quotes, numbers and true / false go without. Restart spotipulse after a change,
+# or skip the file entirely: press s in the app, or run `spotipulse config set <name> <value>`.
 # Full documentation: the "Settings" section of the README.
 
 [spotify]

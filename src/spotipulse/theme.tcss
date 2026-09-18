@@ -417,6 +417,54 @@ ExportScreen {
     margin-top: 1;
 }
 
+/* ---------- settings ---------- */
+
+SettingsScreen, PathInputScreen {
+    align: center middle;
+    background: $background 70%;
+}
+
+#settings {
+    width: 64;
+    max-width: 95%;
+    height: auto;
+    max-height: 95%;
+    border: round $primary;
+    border-title-color: $primary;
+    border-title-style: bold;
+    background: $surface;
+    padding: 1 2;
+}
+
+#settings-table {
+    height: auto;
+    max-height: 12;
+    background: $surface;
+}
+
+#settings-help {
+    height: auto;
+    min-height: 4;
+    margin-top: 1;
+    padding: 0 1;
+    border-left: thick $primary;
+}
+
+#settings-hint {
+    margin-top: 1;
+}
+
+#path-input {
+    width: 64;
+    max-width: 95%;
+    height: auto;
+    border: round $primary;
+    border-title-color: $primary;
+    border-title-style: bold;
+    background: $surface;
+    padding: 1 2;
+}
+
 /* ---------- help ---------- */
 
 HelpScreen {

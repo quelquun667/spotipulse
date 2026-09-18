@@ -47,6 +47,7 @@ tools which only wrap the API can't show.
 - **Instant start**: the last tops, profile, recently played list and covers are kept on disk, shown
   immediately at launch, then refreshed in the background
 - **Help**: press `?` for every keyboard shortcut
+- **Settings without editing files**: press `s` in the app, or use `spotipulse config set …`
 - Spotify-green theme, rounded panels, full keyboard and mouse support
 
 ## Screenshot
@@ -189,6 +190,8 @@ spotipulse               launch the dashboard
 spotipulse --logout      forget your Spotify login
 spotipulse --no-splash   skip the startup logo
 spotipulse --mini        start in the compact view
+spotipulse --config      open the settings file in your editor
+spotipulse config        list, get, set or reset settings (see Settings)
 spotipulse --version     print the version
 ```
 
@@ -204,6 +207,7 @@ spotipulse --version     print the version
 | `↑` / `↓`         | move through a table (updates the cover preview)     |
 | `Tab`             | move focus between widgets                           |
 | `c`               | compact view on / off                                |
+| `s`               | settings: change and save them without leaving the app |
 | `?` or `,`        | show all keyboard shortcuts (`,` so AZERTY needs no Shift) |
 | `r`               | refresh everything                                   |
 | `Ctrl+L`          | redraw the screen (clears terminal artifacts)        |
@@ -224,21 +228,49 @@ and the "Up next" panel make room. For a very small window, use the compact view
 
 ## Settings
 
-### Where they live
+### Three ways to change a setting
 
-All settings are in one file: `~/.config/spotipulse/config.toml` — on Windows,
-`C:\Users\<you>\.config\spotipulse\config.toml`. spotipulse creates it the first time you log in.
+**1. In the app — press `s`.** A list of every setting with its current value:
 
-1. Open it in any text editor (Notepad, VS Code…).
-2. Change or add lines under the `[app]` section.
-3. Save, then restart spotipulse (`q`, then `spotipulse`).
+| Key | Does |
+| --- | ---- |
+| `↑` `↓` | pick a setting (its description, allowed values and default show below) |
+| `←` `→`, `Enter`, `Space` | change the value (for `export_dir`, `Enter` opens a box to type the folder) |
+| `d` | back to the default |
+| `Esc` or `s` | close |
 
-Settings you don't write down keep their default, so the file only needs the ones you want to change.
-A typo or an unknown value doesn't break anything silently: spotipulse refuses to start and tells you which
-line is wrong.
+Changes are **saved to the file immediately** and apply right away. The one exception is `covers`, which
+needs a restart (the screen tells you).
+
+**2. From the command line — `spotipulse config`.**
+
+```bash
+spotipulse config                        # list every setting: value, default, allowed values
+spotipulse config set theme light        # change one
+spotipulse config set animations false
+spotipulse config set export_dir "~/Desktop/Spotify cards"
+spotipulse config get theme              # print one value
+spotipulse config reset theme            # back to the default
+spotipulse config path                   # where the file is
+```
+
+Values are checked before anything is written: `spotipulse config set theme blue` answers
+`theme must be one of dark, light` and leaves the file alone. For `true` / `false` settings, `on` / `off`
+and `yes` / `no` work too. If spotipulse is running, restart it (or use `s`) to pick up the change.
+
+**3. In the file — `spotipulse --config`.** Opens `config.toml` in your editor: `$VISUAL` / `$EDITOR` if
+you've set one, otherwise the app your system uses for `.toml` files (Notepad as a last resort on Windows).
+The file is created if it doesn't exist yet, with every setting listed, commented out, next to a short
+description. Remove the `#` in front of a line to use it, save, and restart spotipulse.
+
+The file lives at `~/.config/spotipulse/config.toml` — on Windows, `C:\Users\<you>\.config\spotipulse\config.toml`.
+Settings you don't write down keep their default. A typo or an unknown value doesn't break anything
+silently: spotipulse refuses to start and names the wrong line, and `spotipulse config reset <name>` puts
+it back.
 
 > **TOML in 20 seconds:** text goes between quotes (`theme = "light"`), numbers and `true` / `false` go
-> without (`animations = false`). Lines starting with `#` are comments.
+> without (`animations = false`). Lines starting with `#` are comments. `spotipulse config set` and the
+> `s` screen write the right syntax for you.
 
 ### All settings at a glance
 
@@ -252,7 +284,7 @@ line is wrong.
 | [`export_dir`](#export_dir) | `~/Pictures` | any folder | where recap cards are saved |
 | [`refresh_interval`](#refresh_interval) | `3` | a number of seconds, 1 or more | how often Now Playing updates |
 
-A full example, with every setting at its default:
+The same file with every setting written out at its default:
 
 ```toml
 [app]
@@ -271,7 +303,8 @@ refresh_interval = 3
 
 `"dark"` (default) or `"light"`. The light theme uses a darker green so text stays readable on white.
 
-You can also switch for the current session with **`t`**, without touching the file.
+**`t`** switches for the current session only, without touching the file. To keep a theme, set it with
+`s` or `spotipulse config set theme light`.
 
 ```toml
 theme = "light"
@@ -373,6 +406,7 @@ secret.
 
 | Problem | Fix |
 | ------- | --- |
+| **Config problem: … must be one of …** at startup | A setting has a value spotipulse doesn't know. Fix it with `spotipulse --config`, or reset it with `spotipulse config reset <name>`. |
 | `spotipulse: command not found` / `not recognized` | Open a **new** terminal (restart VS Code if you use its terminal). Still missing? Run `python -m pipx ensurepath` and check that `~/.local/bin` is on your `PATH`. |
 | Spotify shows **INVALID_CLIENT: Invalid redirect URI** | The redirect URI in your Spotify app must be exactly `http://127.0.0.1:8888/callback`. Save it in the dashboard, then run `spotipulse` again. |
 | **Login failed** / wrong Client ID or Secret | Delete `~/.config/spotipulse/config.toml` and run `spotipulse`: it asks for them again. |
