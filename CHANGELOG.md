@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `spotipulse --config` opens the settings file in your editor, creating it with every setting documented
 - New config files list every setting, commented out, with a description; saving your Spotify credentials
   no longer overwrites the settings already in the file
+- `spotipulse --demo`: the whole dashboard on made-up data, no Spotify account needed
+- Screenshots in the README
 
 ## [0.1.0] - 2026-09-18
 

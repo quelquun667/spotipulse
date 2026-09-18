@@ -4,7 +4,7 @@
 
 <h1 align="center">spotipulse</h1>
 
-<p align="center">A terminal dashboard for your Spotify stats — now playing, top tracks & artists, listening history.</p>
+<p align="center">Your Spotify stats in the terminal — now playing, top tracks & artists with trends, genres, local listening history and Wrapped-style recap cards.</p>
 
 <p align="center">
   <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-1DB954?logo=python&logoColor=white">
@@ -47,12 +47,34 @@ tools which only wrap the API can't show.
 - **Instant start**: the last tops, profile, recently played list and covers are kept on disk, shown
   immediately at launch, then refreshed in the background
 - **Help**: press `?` for every keyboard shortcut
+- **Demo mode**: `spotipulse --demo` runs everything on made-up data, no account needed
 - **Settings without editing files**: press `s` in the app, or use `spotipulse config set …`
 - Spotify-green theme, rounded panels, full keyboard and mouse support
 
-## Screenshot
+## Screenshots
 
-> _Screenshot / terminal recording coming soon._
+<p align="center">
+  <img src="assets/screenshots/now-playing.png" alt="Now Playing: cover art, progress, device, queue" width="900">
+</p>
+
+| Top — 50 tracks & artists with rank trends | History — your local listening log |
+| --- | --- |
+| ![Top tab](assets/screenshots/top.png) | ![History tab](assets/screenshots/history.png) |
+
+| Profile | Recap card (`e`) |
+| --- | --- |
+| ![Profile tab](assets/screenshots/profile.png) | ![Recap card, feed format](assets/screenshots/recap-feed.png) |
+
+<sub>Screenshots taken with `spotipulse --demo`: every artist, track and playlist in them is made up.</sub>
+
+### Try it without a Spotify account
+
+```bash
+spotipulse --demo
+```
+
+The whole dashboard on made-up data — no login, no Spotify app, nothing sent anywhere. Handy to look around
+before setting things up.
 
 ## Requirements
 
@@ -191,6 +213,7 @@ spotipulse --logout      forget your Spotify login
 spotipulse --no-splash   skip the startup logo
 spotipulse --mini        start in the compact view
 spotipulse --config      open the settings file in your editor
+spotipulse --demo        try it on made-up data, no Spotify account needed
 spotipulse config        list, get, set or reset settings (see Settings)
 spotipulse --version     print the version
 ```
@@ -420,7 +443,7 @@ secret.
 
 ## Roadmap
 
-- Terminal recording in this README
+- A short terminal recording (GIF) in this README
 - Optional PyPI release (`pipx install spotipulse`)
 
 > Spotify removed audio features (danceability, energy, tempo…) and recommendations for apps created after

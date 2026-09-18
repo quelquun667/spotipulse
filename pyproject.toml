@@ -5,13 +5,16 @@ build-backend = "hatchling.build"
 [project]
 name = "spotipulse"
 dynamic = ["version"]
-description = "A terminal dashboard for your Spotify stats — now playing, top tracks & artists, listening history."
+description = "Your Spotify stats in the terminal — now playing, top tracks & artists with trends, genres, local listening history and Wrapped-style recap cards."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.11"
 authors = [{ name = "Quelqu'un" }]
-keywords = ["spotify", "cli", "tui", "terminal", "music", "textual", "spotify-api"]
+keywords = [
+    "spotify", "spotify-stats", "spotify-wrapped", "cli", "tui", "terminal", "music",
+    "listening-history", "dashboard", "textual", "spotify-api",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",

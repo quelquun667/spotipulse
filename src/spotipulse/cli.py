@@ -76,6 +76,9 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--no-splash", action="store_true", help="skip the startup logo")
     parser.add_argument("--mini", action="store_true", help="start in the compact view (press c to toggle)")
     parser.add_argument("--config", action="store_true", help="open the settings file in your editor")
+    parser.add_argument(
+        "--demo", action="store_true", help="try the dashboard on made-up data (no Spotify account needed)"
+    )
     parser.add_argument("--version", action="version", version=f"spotipulse {__version__}")
     commands = parser.add_subparsers(dest="command", title="commands", metavar="COMMAND")
     config = commands.add_parser(
@@ -91,6 +94,24 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def _run_demo(args: argparse.Namespace) -> int:
+    """The dashboard on made-up data: no login, nothing sent to Spotify, history kept in memory."""
+    from dataclasses import replace
+
+    from .app import SpotipulseApp
+    from .config import Config, effective_config
+    from .demo import DemoAPI, demo_history
+
+    try:
+        config = replace(effective_config(), client_id="demo", client_secret="demo")
+    except ConfigError:
+        config = Config("demo", "demo")
+    app = SpotipulseApp(DemoAPI(), demo_history(), config, splash=not args.no_splash, mini=args.mini)
+    app.sub_title = "demo mode · everything here is made up"
+    app.run()
+    return app.return_code or 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
 
@@ -99,6 +120,9 @@ def main(argv: list[str] | None = None) -> int:
 
         action = "edit" if args.config else args.action
         return config_cli.run(action, getattr(args, "key", None), getattr(args, "value", None))
+
+    if args.demo:
+        return _run_demo(args)
 
     from .auth import TokenStatus, check_token, login, logout, make_oauth
 
