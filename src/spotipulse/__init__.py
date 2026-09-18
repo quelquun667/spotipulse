@@ -4,7 +4,7 @@ from importlib import resources
 from pathlib import Path
 
 # Single source of truth for the version (pyproject.toml reads it from here).
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 
 def asset_path(name: str) -> Path | None:
