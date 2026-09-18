@@ -283,9 +283,10 @@ class SpotifyAPI:
         total = data.get("total") if isinstance(data, dict) else None
         return int(total) if total is not None else None
 
-    def display_name(self) -> str | None:
+    def me_brief(self) -> tuple[str | None, str | None]:
+        """(display name, avatar URL) of the logged-in user."""
         me = self._call(self.client.current_user) or {}
-        return me.get("display_name") or me.get("id")
+        return me.get("display_name") or me.get("id"), _best_image(me.get("images"), target=200)
 
     def profile(self) -> Profile:
         me = self._call(self.client.current_user) or {}
