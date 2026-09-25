@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `accent_from_cover` now tints the whole Now Playing tab (queue, device and shuffle/repeat values
+  included) and the compact view, instead of only part of it
+
 ### Fixed
 
 - Turning `accent_from_cover` off left the Now Playing panel stuck on the colour of whatever was playing

@@ -356,9 +356,13 @@ Recap cards always use the real cover images, whatever this setting is: it only 
 
 ### `accent_from_cover`
 
-`false` (default) or `true`. When on, the Now Playing tab takes the main color of the current cover: the
-panel borders, the "Now playing" label, the artist name, the progress bar and the equalizer. It changes
-with every track, with a short fade. The rest of the app keeps its green.
+`false` (default) or `true`. When on, the Now Playing tab takes the main color of the current cover:
+panel borders, the "Now playing" label, artist names, the progress bar, the equalizer, the device and
+shuffle/repeat values, and the "Up next" list. The compact view (`c`) follows the same color. It changes
+with every track, with a short fade.
+
+The rest of the app keeps the Spotify green on purpose: in the Top tab green and red mean "climbed" and
+"dropped", and tinting tables and charts with an unpredictable cover color hurts readability.
 
 If a cover is mostly black, white or grey, there's no color to pick and the tab stays green.
 

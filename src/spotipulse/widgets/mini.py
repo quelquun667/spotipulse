@@ -7,11 +7,11 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import ProgressBar, Static
+from textual.widgets import Static
 
 from .. import palette
 from ..stats import format_clock
-from .now_playing import REPEAT_LABELS, NowPlayingView
+from .now_playing import BORDER_RULES, REPEAT_LABELS, NowPlayingView, progress_bar
 
 
 class MiniScreen(Screen):
@@ -25,7 +25,7 @@ class MiniScreen(Screen):
             yield Static("", id="mini-artist")
             with Horizontal(id="mini-progress-row"):
                 yield Static("", id="mini-elapsed")
-                yield ProgressBar(total=100, show_eta=False, show_percentage=False, id="mini-progress")
+                yield Static("", id="mini-progress")
                 yield Static("", id="mini-duration")
             yield Static("", id="mini-meta")
             yield Static("", id="mini-next")
@@ -36,25 +36,36 @@ class MiniScreen(Screen):
         self._update_view()
         self.set_interval(0.5, self._update_view)
 
+    def _set_border(self, accent: str | None) -> None:
+        """The compact view mirrors the Now Playing tab, cover tint included."""
+        panel = self.query_one("#mini")
+        if accent is None:
+            for rule in BORDER_RULES:
+                panel.styles.clear_rule(rule)
+        else:
+            panel.styles.border = ("round", accent)
+
     def _update_view(self) -> None:
         view = self.app.query_one(NowPlayingView)
         state = view.state
+        accent = view.accent  # None = the theme's green
+        self._set_border(accent)
         title = self.query_one("#mini-title", Static)
         if state is None:
             title.update(Text("Nothing playing", style="bold"))
             self.query_one("#mini-artist", Static).update(Text("Start something on Spotify", style="dim"))
             for widget_id in ("#mini-elapsed", "#mini-duration", "#mini-meta", "#mini-next"):
                 self.query_one(widget_id, Static).update("")
-            self.query_one("#mini-progress", ProgressBar).update(total=100, progress=0)
+            self.query_one("#mini-progress", Static).update("")
             return
 
         track = state.track
         heading = Text()
-        heading.append("▶ " if state.is_playing else "⏸ ", style=f"bold {palette.bright()}")
+        heading.append("▶ " if state.is_playing else "⏸ ", style=f"bold {accent or palette.bright()}")
         heading.append(track.name, style="bold")
         title.update(heading)
 
-        artist = Text(track.artist_line, style=palette.green())
+        artist = Text(track.artist_line, style=accent or palette.green())
         if track.album:
             artist.append(f"  ·  {track.album}", style="dim")
         if track.year:
@@ -64,7 +75,10 @@ class MiniScreen(Screen):
         position, duration = view.progress()
         self.query_one("#mini-elapsed", Static).update(format_clock(position))
         self.query_one("#mini-duration", Static).update(format_clock(duration))
-        self.query_one("#mini-progress", ProgressBar).update(total=duration, progress=position)
+        bar = self.query_one("#mini-progress", Static)
+        bar.update(
+            progress_bar(position, duration, bar.content_region.width or 30, accent or palette.green())
+        )
 
         meta = Text()
         parts = []
@@ -78,12 +92,11 @@ class MiniScreen(Screen):
                 meta.append("  ·  ", style="dim")
             meta.append(label, style="dim")
             meta.append(value)
+        highlight = accent or palette.bright()
         if state.shuffle:
-            meta.append("  ·  shuffle", style=palette.bright())
+            meta.append("  ·  shuffle", style=highlight)
         if state.repeat != "off":
-            meta.append(
-                f"  ·  repeat {REPEAT_LABELS.get(state.repeat, state.repeat)}", style=palette.bright()
-            )
+            meta.append(f"  ·  repeat {REPEAT_LABELS.get(state.repeat, state.repeat)}", style=highlight)
         self.query_one("#mini-meta", Static).update(meta)
 
         next_line = Text()

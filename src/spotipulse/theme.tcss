@@ -357,16 +357,7 @@ MiniScreen {
 
 #mini-progress {
     width: 1fr;
-}
-
-#mini-progress Bar {
-    width: 1fr;
-}
-
-#mini-progress Bar > .bar--bar,
-#mini-progress Bar > .bar--complete {
-    color: $primary;
-    background: $panel;
+    height: 1;
 }
 
 #mini-meta {

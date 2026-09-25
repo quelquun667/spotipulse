@@ -266,3 +266,37 @@ def test_accent_from_cover_tints_now_playing():
     asyncio.run(drive())
     red, green, blue = (int(seen["accent"][i : i + 2], 16) for i in (1, 3, 5))
     assert red > green and red > blue
+
+
+def test_compact_view_uses_the_cover_tint():
+    from PIL import Image
+
+    from spotipulse.widgets.now_playing import NowPlayingView
+
+    class ColourfulAPI(FakeAPI):
+        def __init__(self):
+            super().__init__()
+            self.tracks = [t.__class__(**{**t.__dict__, "image_url": "cover"}) for t in self.tracks]
+
+        def image(self, url):
+            return Image.new("RGB", (32, 32), (30, 60, 220))
+
+    app = SpotipulseApp(
+        ColourfulAPI(), HistoryDB(":memory:"), Config("id", "secret", accent_from_cover=True), splash=False
+    )
+    seen = {}
+
+    async def drive():
+        async with app.run_test(size=(90, 14)) as pilot:
+            await pilot.pause(1.0)
+            seen["accent"] = app.query_one(NowPlayingView).accent
+            await pilot.press("c")
+            await pilot.pause(0.6)
+            mini = app.screen
+            seen["artist"] = str(mini.query_one("#mini-artist").render())
+            seen["border"] = mini.query_one("#mini").styles.border_top[1].hex.upper()
+
+    asyncio.run(drive())
+    assert seen["accent"] is not None
+    assert seen["border"] == seen["accent"].upper()  # the compact view borrows the same colour
+    assert seen["artist"]  # and still shows the artist

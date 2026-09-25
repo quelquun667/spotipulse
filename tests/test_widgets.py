@@ -68,3 +68,19 @@ def test_progress_bar_splits_played_and_remaining():
     assert bar.plain == "━" * 20
     assert bar.spans[0].end == 5  # a quarter played
     assert progress_bar(0, 0, 10, "#FF0000").plain == "━" * 10
+
+
+def test_now_playing_text_follows_the_cover_tint():
+    from spotipulse import palette
+    from spotipulse.api import NowPlaying
+    from spotipulse.widgets.now_playing import playback_line, queue_text
+
+    from conftest import make_track
+
+    state = NowPlaying(make_track(1), 0, True, shuffle=True, repeat="track")
+    queue = [make_track(2)]
+
+    green = (playback_line(state).markup, queue_text(queue).markup)
+    tinted = (playback_line(state, "#FF00AA").markup, queue_text(queue, "#FF00AA").markup)
+    assert all("#FF00AA" in markup for markup in tinted)
+    assert all(palette.bright() in markup or palette.green() in markup for markup in green)

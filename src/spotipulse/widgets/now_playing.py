@@ -43,14 +43,15 @@ def context_line(state: NowPlaying, name: str | None) -> str:
     return f"From a {kind}" if kind else ""
 
 
-def playback_line(state: NowPlaying) -> Text:
+def playback_line(state: NowPlaying, accent: str | None = None) -> Text:
     text = Text()
+    highlight = accent or palette.bright()
 
     def field(label: str, value: str, active: bool = True) -> None:
         if text:
             text.append("    ")
         text.append(f"{label} ", style="dim")
-        text.append(value, style=f"bold {palette.bright()}" if active else "")
+        text.append(value, style=f"bold {highlight}" if active else "")
 
     if state.device_name:
         device = state.device_name
@@ -71,7 +72,7 @@ def progress_bar(position: int, duration: int, width: int, color: str) -> Text:
     return Text.assemble(("━" * done, color), ("━" * (width - done), "dim"))
 
 
-def queue_text(queue: list[Track]) -> Text:
+def queue_text(queue: list[Track], accent: str | None = None) -> Text:
     text = Text()
     if not queue:
         text.append("Nothing queued.", style="italic dim")
@@ -81,7 +82,7 @@ def queue_text(queue: list[Track]) -> Text:
             text.append("\n")
         text.append(f"{i}  ", style="dim")
         text.append(track.name, style="bold")
-        text.append(f"  {track.artist_line}", style=palette.green())
+        text.append(f"  {track.artist_line}", style=accent or palette.green())
         text.append(f"  {format_clock(track.duration_ms)}", style="dim")
     return text
 
@@ -245,8 +246,8 @@ class NowPlayingView(Vertical):
             album = f"{album}  [dim]·[/dim]  {track.year}" if album else track.year
         self.query_one("#np-album", Static).update(album)
         self.query_one("#np-context", Static).update(context_line(state, context_name))
-        self.query_one("#np-playback", Static).update(playback_line(state))
-        self.query_one("#np-queue-list", Static).update(queue_text(queue))
+        self.query_one("#np-playback", Static).update(playback_line(state, self.accent))
+        self.query_one("#np-queue-list", Static).update(queue_text(queue, self.accent))
         self._tick()
 
     @property
@@ -286,6 +287,9 @@ class NowPlayingView(Vertical):
                 widget.styles.border_title_color = accent
         for equalizer in self.query(Equalizer):
             equalizer.set_color(accent)
+        if self._state is not None:
+            self.query_one("#np-playback", Static).update(playback_line(self._state, accent))
+            self.query_one("#np-queue-list", Static).update(queue_text(self.queue, accent))
         self._tick()
 
     def _tick(self) -> None:
