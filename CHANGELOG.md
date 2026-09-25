@@ -5,6 +5,12 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Turning `accent_from_cover` off left the Now Playing panel stuck on the colour of whatever was playing
+
 ## [0.2.0] - 2026-09-18
 
 ### Added

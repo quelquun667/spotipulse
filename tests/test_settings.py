@@ -4,6 +4,7 @@ import asyncio
 
 import pytest
 
+from spotipulse.app import SpotipulseApp
 from spotipulse.cli import main
 from spotipulse.config import (
     SETTINGS,
@@ -235,3 +236,47 @@ def test_settings_screen_types_the_export_folder(isolated_home, tmp_path):
     asyncio.run(drive())
     assert read_settings() == {"export_dir": str(target)}
     assert app.config.export_dir == target
+
+
+def test_turning_accent_from_cover_off_clears_the_tint(isolated_home):
+    """The panel used to keep the colour of whatever was playing when the setting went off."""
+    from PIL import Image
+
+    from spotipulse.widgets.now_playing import NowPlayingView
+
+    class ColourfulAPI(_fake_api_class()):
+        def image(self, url):
+            return Image.new("RGB", (32, 32), (200, 30, 30))
+
+    app = SpotipulseApp(
+        ColourfulAPI(), HistoryDB(":memory:"), Config("id", "secret", accent_from_cover=True), splash=False
+    )
+    seen = {}
+
+    async def drive():
+        async with app.run_test(size=(140, 45)) as pilot:
+            await pilot.pause(1.0)
+            view = app.query_one(NowPlayingView)
+            body = app.query_one("#np-body")
+            seen["on"] = (view.accent, body.styles.border_top[1].hex.upper())
+            app.apply_setting("accent_from_cover", False)
+            await pilot.pause(1.0)
+            seen["off"] = (view.accent, body.styles.border_top[1].hex.upper())
+
+    asyncio.run(drive())
+    tint = seen["on"][0]
+    assert tint is not None and seen["on"][1] == tint.upper()  # the panel took the cover colour
+    assert seen["off"][0] is None and seen["off"][1] != tint.upper()  # and gave it back
+
+
+def _fake_api_class():
+    from test_app import FakeAPI
+
+    tracks = FakeAPI().tracks
+
+    class WithCovers(FakeAPI):
+        def __init__(self):
+            super().__init__()
+            self.tracks = [t.__class__(**{**t.__dict__, "image_url": "cover"}) for t in tracks]
+
+    return WithCovers

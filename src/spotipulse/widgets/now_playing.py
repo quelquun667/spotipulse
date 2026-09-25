@@ -25,6 +25,8 @@ COUNT_AFTER_MS = 30_000
 QUEUE_REFRESH_S = 15
 QUEUE_SIZE = 5
 
+BORDER_RULES = ("border_top", "border_right", "border_bottom", "border_left", "border_title_color")
+
 REPEAT_LABELS = {"off": "off", "context": "all", "track": "one"}
 CONTEXT_LABELS = {"playlist": "playlist", "album": "album", "artist": "artist", "show": "podcast"}
 
@@ -275,8 +277,10 @@ class NowPlayingView(Vertical):
         for selector in ("#np-body", "#np-queue"):
             widget = self.query_one(selector)
             if accent is None:
-                widget.styles.clear_rule("border")
-                widget.styles.clear_rule("border_title_color")
+                # "border" is four rules under the hood: clearing it by that name would do nothing,
+                # and the panel would keep the color of whatever was playing.
+                for rule in BORDER_RULES:
+                    widget.styles.clear_rule(rule)
             else:
                 widget.styles.border = ("round", accent)
                 widget.styles.border_title_color = accent
